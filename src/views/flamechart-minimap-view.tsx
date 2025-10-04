@@ -127,7 +127,10 @@ export class FlamechartMinimapView extends Component<FlamechartMinimapViewProps,
 
     const physicalViewSpaceFrameHeight = Sizes.FRAME_HEIGHT * window.devicePixelRatio
     const physicalViewSpaceFontSize = FontSize.LABEL * window.devicePixelRatio
-    const labelPaddingPx = (physicalViewSpaceFrameHeight - physicalViewSpaceFontSize) / 2
+    const labelPaddingPx = Math.max(
+      2,
+      (physicalViewSpaceFrameHeight - physicalViewSpaceFontSize) / 4,
+    )
 
     ctx.font = `${physicalViewSpaceFontSize}px/${physicalViewSpaceFrameHeight}px ${FontFamily.MONOSPACE}`
     ctx.textBaseline = 'top'

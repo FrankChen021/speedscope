@@ -43,7 +43,9 @@ import {
   getChronoViewFlamechart,
 } from './views/flamechart-view-container'
 import {ProfileSearchContext} from './views/search-view'
-import {ThemeProvider, useTheme} from './views/themes/theme'
+import {ThemeProvider, ThemeContext, useTheme} from './views/themes/theme'
+import {lightTheme} from './views/themes/light-theme'
+import {darkTheme} from './views/themes/dark-theme'
 
 // Standalone ProfileSearchContextProvider that doesn't rely on global app state
 const StandaloneProfileSearchContextProvider = ({
@@ -314,7 +316,9 @@ export function StandaloneFlamegraph({
 
     // Start the viewport at y=-1.1 to create a small gap above the first frame (at y=0)
     // so that the axis labels don't overlap with the frame's top border.
-    const viewportHeight = maxDepth + 2.3
+    // Show more levels to make each rectangle shorter/more compact
+    const maxReasonableDepth = Math.min(maxDepth, 40) // Show max 40 levels initially for more compact view
+    const viewportHeight = maxReasonableDepth + 1.0
 
     const initialRect = new Rect(new Vec2(0, -1.3), new Vec2(totalWeight, viewportHeight))
     console.log('Setting initial viewport rect:', {
@@ -434,8 +438,11 @@ export function StandaloneFlamegraph({
     )
   }
 
+  // Force the theme based on the prop instead of using system preferences
+  const forcedTheme = theme === 'light' ? lightTheme : darkTheme
+
   return (
-    <ThemeProvider>
+    <ThemeContext.Provider value={forcedTheme}>
       <StandaloneProfileSearchContextProvider profile={profile}>
         <div
           ref={containerRef}
@@ -474,6 +481,6 @@ export function StandaloneFlamegraph({
           )}
         </div>
       </StandaloneProfileSearchContextProvider>
-    </ThemeProvider>
+    </ThemeContext.Provider>
   )
 }

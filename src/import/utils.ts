@@ -230,7 +230,11 @@ export class MaybeCompressedDataReader implements ProfileDataSource {
   ) {
     this.uncompressedData = maybeCompressedDataPromise.then(async (fileData: ArrayBuffer) => {
       try {
-        const result = pako.inflate(new Uint8Array(fileData)).buffer
+        const inflated = pako.inflate(new Uint8Array(fileData))
+        const result = inflated.buffer.slice(
+          inflated.byteOffset,
+          inflated.byteOffset + inflated.byteLength,
+        ) as ArrayBuffer
         return result
       } catch (e) {
         return fileData

@@ -348,10 +348,10 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
     matchedFrameBatch.fill(ctx, theme.searchMatchPrimaryColor)
     matchedTextHighlightBatch.fill(ctx, theme.searchMatchSecondaryColor)
     fadedLabelBatch.fill(ctx, theme.fgSecondaryColor)
-    labelBatch.fill(
-      ctx,
-      this.props.searchResults != null ? theme.searchMatchTextColor : theme.fgPrimaryColor,
-    )
+    const textColor =
+      this.props.searchResults != null ? theme.searchMatchTextColor : theme.fgPrimaryColor
+    console.log('Text color being used:', textColor, 'Theme:', theme.fgPrimaryColor)
+    labelBatch.fill(ctx, textColor)
     indirectlySelectedOutlineBatch.stroke(ctx, theme.selectionSecondaryColor, frameOutlineWidth)
     directlySelectedOutlineBatch.stroke(ctx, theme.selectionPrimaryColor, frameOutlineWidth)
 
@@ -385,7 +385,10 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
     const physicalViewSize = this.physicalViewSize()
     const configToPhysical = this.configSpaceToPhysicalViewSpace()
     const physicalViewSpaceFontSize = FontSize.LABEL * window.devicePixelRatio
-    const labelPaddingPx = (physicalViewSpaceFrameHeight - physicalViewSpaceFontSize) / 2
+    const labelPaddingPx = Math.max(
+      2,
+      (physicalViewSpaceFrameHeight - physicalViewSpaceFontSize) / 4,
+    )
 
     const left = this.props.configSpaceViewportRect.left()
     const right = this.props.configSpaceViewportRect.right()
