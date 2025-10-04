@@ -1,8 +1,8 @@
 {
-  "name": "speedscope",
+  "name": "@frankchen029/speedscope",
   "version": "1.23.1",
   "description": "",
-  "repository": "jlfwong/speedscope",
+  "repository": "FrankChen021/speedscope",
   "main": "index.js",
   "bin": {
     "speedscope": "./bin/cli.mjs"
@@ -10,6 +10,8 @@
   "scripts": {
     "deploy": "./scripts/deploy.sh",
     "prepack": "./scripts/prepack.sh --outdir \"$(pwd)/dist/release\" --protocol file",
+    "build": "npm run prepack",
+    "build:lib": "tsx scripts/build-lib.ts",
     "prettier": "prettier --write 'src/**/*.ts' 'src/**/*.tsx'",
     "lint": "eslint 'src/**/*.ts' 'src/**/*.tsx'",
     "jest": "./scripts/test-setup.sh && jest --runInBand",
