@@ -1,0 +1,63 @@
+# .npmignore - Define what NOT to publish to npm
+
+# Source files (we only publish the built dist/lib)
+src/
+scripts/
+sample/
+assets/
+
+# Development files
+*.test.ts
+*.test.tsx
+__tests__/
+__snapshots__/
+.vscode/
+.idea/
+
+# Config files
+tsconfig.json
+prettier.config.js
+jest.config.js
+.eslintrc
+.eslintrc.json
+.eslintignore
+.prettierrc
+.prettierignore
+
+# CI/CD
+.github/
+.circleci/
+.travis.yml
+.gitlab-ci.yml
+
+# Documentation (keep root README, exclude development docs)
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+README-ADMINS.md
+NPM_PUBLISHING_GUIDE.md
+INTEGRATION_GUIDE.md
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Build artifacts (except dist/lib which we want)
+dist/release/
+*.log
+*.tgz
+
+# Dependencies
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
