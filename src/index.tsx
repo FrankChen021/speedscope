@@ -1,5 +1,9 @@
 // Main export file for using speedscope as a library
 
+// Export the standalone component (easiest way to use speedscope)
+export {StandaloneFlamegraph} from './standalone-flamegraph'
+export type {StandaloneFlamegraphProps} from './standalone-flamegraph'
+
 // Export the main flamegraph components
 export {ChronoFlamechartView, LeftHeavyFlamechartView} from './views/flamechart-view-container'
 export type {FlamechartViewContainerProps} from './views/flamechart-view-container'

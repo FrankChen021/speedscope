@@ -696,16 +696,17 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
     this.renderCanvas()
   }
 
-  private onWheel = (ev: React.WheelEvent<HTMLDivElement>) => {
-    ev.preventDefault()
+  // Native wheel event handler to support preventDefault with passive: false
+  private onWheelNative = (ev: Event) => {
+    const wheelEv = ev as WheelEvent
+    wheelEv.preventDefault()
     this.frameHadWheelEvent = true
 
-    const isZoom = ev.metaKey || ev.ctrlKey
-    const nativeEv = ev.nativeEvent as WheelEvent
+    const isZoom = wheelEv.metaKey || wheelEv.ctrlKey
 
-    let deltaY = ev.deltaY
-    let deltaX = ev.deltaX
-    if (ev.deltaMode === WheelEvent.DOM_DELTA_LINE) {
+    let deltaY = wheelEv.deltaY
+    let deltaX = wheelEv.deltaX
+    if (wheelEv.deltaMode === WheelEvent.DOM_DELTA_LINE) {
       deltaY *= this.LOGICAL_VIEW_SPACE_FRAME_HEIGHT
       deltaX *= this.LOGICAL_VIEW_SPACE_FRAME_HEIGHT
     }
@@ -716,13 +717,14 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
       // On Chrome & Firefox, pinch-to-zoom maps to
       // WheelEvent + Ctrl Key. We'll accelerate it in
       // this case, since it feels a bit sluggish otherwise.
-      if (ev.ctrlKey) {
-        multiplier = 1 + deltaY / 40
+      if (wheelEv.ctrlKey) {
+        // Increase sensitivity for pinch-to-zoom (was /40, now /10 for 4x more sensitivity)
+        multiplier = 1 + deltaY / 10
       }
 
       multiplier = clamp(multiplier, 0.1, 10.0)
 
-      this.zoom(new Vec2(nativeEv.offsetX, nativeEv.offsetY), multiplier)
+      this.zoom(new Vec2(wheelEv.offsetX, wheelEv.offsetY), multiplier)
     } else if (this.interactionLock !== 'zoom') {
       this.pan(new Vec2(deltaX, deltaY))
     }
@@ -792,11 +794,19 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
     this.props.canvasContext.addBeforeFrameHandler(this.onBeforeFrame)
     window.addEventListener('resize', this.onWindowResize)
     window.addEventListener('keydown', this.onWindowKeyPress)
+    // Add wheel listener with passive: false to allow preventDefault
+    if (this.container) {
+      this.container.addEventListener('wheel', this.onWheelNative, {passive: false})
+    }
   }
   componentWillUnmount() {
     this.props.canvasContext.removeBeforeFrameHandler(this.onBeforeFrame)
     window.removeEventListener('resize', this.onWindowResize)
     window.removeEventListener('keydown', this.onWindowKeyPress)
+    // Remove wheel listener
+    if (this.container) {
+      this.container.removeEventListener('wheel', this.onWheelNative)
+    }
   }
 
   render() {
@@ -810,7 +820,6 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
         onMouseLeave={this.onMouseLeave}
         onClick={this.onClick}
         onDoubleClick={this.onDblClick}
-        onWheel={this.onWheel}
         ref={this.containerRef}
       >
         <canvas width={1} height={1} ref={this.overlayCanvasRef} className={css(style.fill)} />

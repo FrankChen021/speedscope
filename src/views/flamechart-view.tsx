@@ -39,7 +39,7 @@ export class FlamechartView extends StatelessComponent<FlamechartViewProps> {
 
     const origin = Vec2.clamp(
       viewportRect.origin,
-      new Vec2(0, -1),
+      new Vec2(0, -3),
       Vec2.max(
         Vec2.zero,
         configSpaceSize.minus(size).plus(new Vec2(0, configSpaceDetailViewHeight + 1)),

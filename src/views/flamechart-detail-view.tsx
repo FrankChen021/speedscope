@@ -56,14 +56,20 @@ function StackTraceView(props: StackTraceViewProps) {
 
   const rows: JSX.Element[] = []
   let node: CallTreeNode | null = props.node
+  let depth = 0
   for (; node && !node.isRoot(); node = node.parent) {
     const row: (JSX.Element | string)[] = []
     const {frame} = node
+    const key = `${frame.key}-${depth}`
 
-    row.push(<ColorChit color={props.getFrameColor(frame)} />)
+    row.push(<ColorChit key={`chit-${key}`} color={props.getFrameColor(frame)} />)
 
     if (rows.length) {
-      row.push(<span className={css(style.stackFileLine)}>&gt; </span>)
+      row.push(
+        <span key={`arrow-${key}`} className={css(style.stackFileLine)}>
+          &gt;{' '}
+        </span>,
+      )
     }
     row.push(frame.name)
 
@@ -75,9 +81,19 @@ function StackTraceView(props: StackTraceViewProps) {
           pos += `:${frame.col}`
         }
       }
-      row.push(<span className={css(style.stackFileLine)}> ({pos})</span>)
+      row.push(
+        <span key={`file-${key}`} className={css(style.stackFileLine)}>
+          {' '}
+          ({pos})
+        </span>,
+      )
     }
-    rows.push(<div className={css(style.stackLine)}>{row}</div>)
+    rows.push(
+      <div key={key} className={css(style.stackLine)}>
+        {row}
+      </div>,
+    )
+    depth++
   }
   return (
     <div className={css(style.stackTraceView)}>

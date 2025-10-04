@@ -8,13 +8,13 @@
 import * as esbuild from 'esbuild'
 import * as fs from 'fs'
 import * as path from 'path'
+import {execSync} from 'child_process'
 
 const outdir = path.join(process.cwd(), 'dist', 'lib')
 
 // Clean output directory
 if (fs.existsSync(outdir)) {
   // Use rm -rf for cross-platform compatibility
-  const {execSync} = require('child_process')
   execSync(`rm -rf "${outdir}"`)
 }
 fs.mkdirSync(outdir, {recursive: true})
@@ -66,6 +66,150 @@ async function buildLib() {
     format: 'esm',
   })
   console.log('✓ Built standalone ESM bundle')
+
+  // Generate TypeScript declarations - minimal self-contained versions
+  console.log('Generating TypeScript declarations...')
+
+  // Create standalone.d.ts with self-contained types
+  const standaloneDts = `import * as React from 'react';
+
+export interface StandaloneFlamegraphProps {
+  profileData?: any;
+  width?: number | string;
+  height?: number | string;
+  fileName?: string;
+  onProfileLoad?: (profile: any) => void;
+  onError?: (error: Error) => void;
+}
+
+export declare function StandaloneFlamegraph(props: StandaloneFlamegraphProps): React.JSX.Element;
+`
+  fs.writeFileSync(path.join(outdir, 'standalone.d.ts'), standaloneDts)
+
+  // Create index.d.ts with self-contained types
+  const indexDts = `import * as React from 'react';
+
+// Main component
+export interface StandaloneFlamegraphProps {
+  profileData?: any;
+  width?: number | string;
+  height?: number | string;
+  fileName?: string;
+  onProfileLoad?: (profile: any) => void;
+  onError?: (error: Error) => void;
+}
+
+export declare function StandaloneFlamegraph(props: StandaloneFlamegraphProps): React.JSX.Element;
+
+// Flamechart components
+export declare const ChronoFlamechartView: React.FC<any>;
+export declare const LeftHeavyFlamechartView: React.FC<any>;
+export declare const SandwichViewContainer: React.FC<any>;
+export declare const FlamechartView: React.FC<any>;
+export declare const FlamechartPanZoomView: React.FC<any>;
+export declare const FlamechartMinimapView: React.FC<any>;
+export declare const FlamechartDetailView: React.FC<any>;
+
+// Search context providers
+export declare const FlamechartSearchContextProvider: React.FC<{children?: React.ReactNode}>;
+export declare const ProfileSearchContextProvider: React.FC<{children?: React.ReactNode}>;
+
+// Theme system
+export interface Theme {
+  fgPrimaryColor: string;
+  fgSecondaryColor: string;
+  bgPrimaryColor: string;
+  bgSecondaryColor: string;
+  selectionPrimaryColor: string;
+  selectionSecondaryColor: string;
+  weightColor: string;
+}
+
+export declare const ThemeProvider: React.FC<{children?: React.ReactNode; theme?: Theme}>;
+export declare function useTheme(): Theme;
+export declare const lightTheme: Theme;
+export declare const darkTheme: Theme;
+
+// Utility hooks and functions
+export declare function useAtom<T>(atom: Atom<T>): T;
+
+// Core types
+export interface Atom<T> {
+  get(): T;
+  set(value: T): void;
+  subscribe(callback: () => void): () => void;
+}
+
+export interface Profile {
+  getName(): string;
+  getTotalWeight(): number;
+  getTotalNonIdleWeight(): number;
+  getAppendOrderCalltreeRoot(): CallTreeNode;
+  getGroupedCalltreeRoot(): CallTreeNode;
+  formatValue(v: number): string;
+  getWeightUnit(): string;
+}
+
+export interface ProfileGroup {
+  name: string;
+  indexToView: number;
+  profiles: Profile[];
+}
+
+export interface Frame {
+  key: string | number;
+  name: string;
+  file?: string;
+  line?: number;
+  col?: number;
+}
+
+export interface CallTreeNode {
+  frame: Frame;
+  getTotalWeight(): number;
+  getSelfWeight(): number;
+  children: CallTreeNode[];
+}
+
+// Import utilities
+export declare function importProfileGroupFromText(fileName: string, contents: string): Promise<ProfileGroup | null>;
+export declare function importProfilesFromArrayBuffer(fileName: string, buffer: ArrayBuffer): Promise<ProfileGroup | null>;
+export declare function importProfileGroupFromBase64(fileName: string, b64contents: string): Promise<ProfileGroup | null>;
+
+// GL rendering
+export interface CanvasContext {
+  gl: WebGLRenderingContext;
+  rectangleBatchRenderer: any;
+}
+
+export declare function getCanvasContext(canvas: HTMLCanvasElement): CanvasContext | null;
+
+// Math utilities
+export declare class Vec2 {
+  readonly x: number;
+  readonly y: number;
+  constructor(x: number, y: number);
+}
+
+export declare class Rect {
+  readonly origin: Vec2;
+  readonly size: Vec2;
+  constructor(origin: Vec2, size: Vec2);
+}
+
+export declare class AffineTransform {
+  constructor(m00?: number, m01?: number, m02?: number, m10?: number, m11?: number, m12?: number);
+}
+
+// View mode
+export declare enum ViewMode {
+  CHRONO_FLAME_CHART = 'CHRONO_FLAME_CHART',
+  LEFT_HEAVY_FLAME_GRAPH = 'LEFT_HEAVY_FLAME_GRAPH',
+  SANDWICH_VIEW = 'SANDWICH_VIEW',
+}
+`
+  fs.writeFileSync(path.join(outdir, 'index.d.ts'), indexDts)
+  console.log('✓ Generated TypeScript declarations')
 
   // Copy CSS files
   const cssFiles = ['assets/reset.css', 'assets/source-code-pro.css']

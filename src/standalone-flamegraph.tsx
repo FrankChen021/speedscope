@@ -22,14 +22,190 @@
  * ```
  */
 
-import {useState, useEffect, useRef, useMemo} from 'react'
-import {ChronoFlamechartView} from './views/flamechart-view-container'
-import {ThemeProvider} from './views/themes/theme'
-import {ProfileSearchContextProvider} from './views/search-view'
-import {Profile, ProfileGroup} from './lib/profile'
-import {importProfileGroupFromText, importProfilesFromArrayBuffer} from './import'
+import {memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react'
+import {searchIsActiveAtom, searchQueryAtom} from './app-state'
 import {ActiveProfileState} from './app-state/active-profile-state'
-import {Vec2, Rect} from './lib/math'
+import {
+  createGetColorBucketForFrame,
+  createGetCSSColorForFrame,
+  getCanvasContext,
+  getFrameToColorBucket,
+} from './app-state/getters'
+import {importProfileGroupFromText, importProfilesFromArrayBuffer} from './import'
+import {useAtom} from './lib/atom'
+import {Rect, Vec2} from './lib/math'
+import {CallTreeNode, Profile, ProfileGroup} from './lib/profile'
+import {ProfileSearchResults} from './lib/profile-search'
+import {FlamechartSearchContextProvider} from './views/flamechart-search-view'
+import {FlamechartView} from './views/flamechart-view'
+import {
+  createMemoizedFlamechartRenderer,
+  getChronoViewFlamechart,
+} from './views/flamechart-view-container'
+import {ProfileSearchContext} from './views/search-view'
+import {ThemeProvider, useTheme} from './views/themes/theme'
+
+// Standalone ProfileSearchContextProvider that doesn't rely on global app state
+const StandaloneProfileSearchContextProvider = ({
+  profile,
+  children,
+}: {
+  profile: Profile | null
+  children: React.ReactNode
+}) => {
+  const searchIsActive = useAtom(searchIsActiveAtom)
+  const searchQuery = useAtom(searchQueryAtom)
+
+  const searchResults = useMemo(() => {
+    if (!profile || !searchIsActive || searchQuery.length === 0) {
+      return null
+    }
+    return new ProfileSearchResults(profile, searchQuery)
+  }, [searchIsActive, searchQuery, profile])
+
+  return (
+    <ProfileSearchContext.Provider value={searchResults}>{children}</ProfileSearchContext.Provider>
+  )
+}
+
+// Wrapper component that provides custom setters for standalone use
+const StandaloneChronoFlamechartView = memo(
+  ({
+    activeProfileState,
+    glCanvas,
+    canvasContext,
+    onViewportChange,
+    onLogicalSpaceSizeChange,
+    onNodeSelect,
+    onNodeHover,
+  }: {
+    activeProfileState: ActiveProfileState
+    glCanvas: HTMLCanvasElement
+    canvasContext: ReturnType<typeof getCanvasContext>
+    onViewportChange: (rect: Rect) => void
+    onLogicalSpaceSizeChange: (size: Vec2) => void
+    onNodeSelect: (node: CallTreeNode | null) => void
+    onNodeHover: (hover: {node: CallTreeNode; event: MouseEvent} | null) => void
+  }) => {
+    const {profile, chronoViewState} = activeProfileState
+    const theme = useTheme()
+    const lastViewportRef = useRef<Rect | null>(null)
+    const logicalSpaceSizeInitialized = useRef(false)
+
+    // Memoize all computed values to prevent infinite loops
+    const frameToColorBucket = useMemo(() => getFrameToColorBucket(profile), [profile])
+    const getColorBucketForFrame = useMemo(
+      () => createGetColorBucketForFrame(frameToColorBucket),
+      [frameToColorBucket],
+    )
+    const getCSSColorForFrame = useMemo(
+      () => createGetCSSColorForFrame({theme, frameToColorBucket}),
+      [theme, frameToColorBucket],
+    )
+
+    const flamechart = useMemo(
+      () => getChronoViewFlamechart({profile, getColorBucketForFrame}),
+      [profile, getColorBucketForFrame],
+    )
+
+    const getChronoViewFlamechartRenderer = useMemo(() => createMemoizedFlamechartRenderer(), [])
+    const flamechartRenderer = useMemo(
+      () =>
+        getChronoViewFlamechartRenderer({
+          canvasContext,
+          flamechart,
+        }),
+      [getChronoViewFlamechartRenderer, canvasContext, flamechart],
+    )
+
+    // Create custom setters that update our local state
+    // These MUST be memoized to prevent infinite loops
+    const setConfigSpaceViewportRect = useCallback(
+      (rect: Rect) => {
+        // Only update if the rect actually changed to prevent infinite loops
+        const lastRect = lastViewportRef.current
+
+        // Log the comparison for debugging
+        console.log('setConfigSpaceViewportRect called:', {
+          newRect: {x: rect.origin.x, y: rect.origin.y, w: rect.size.x, h: rect.size.y},
+          lastRect: lastRect
+            ? {x: lastRect.origin.x, y: lastRect.origin.y, w: lastRect.size.x, h: lastRect.size.y}
+            : null,
+          equal:
+            lastRect &&
+            lastRect.origin.x === rect.origin.x &&
+            lastRect.origin.y === rect.origin.y &&
+            lastRect.size.x === rect.size.x &&
+            lastRect.size.y === rect.size.y,
+        })
+
+        if (
+          !lastRect ||
+          lastRect.origin.x !== rect.origin.x ||
+          lastRect.origin.y !== rect.origin.y ||
+          lastRect.size.x !== rect.size.x ||
+          lastRect.size.y !== rect.size.y
+        ) {
+          console.log('Viewport changed, updating')
+          lastViewportRef.current = rect
+          onViewportChange(rect)
+        }
+      },
+      [onViewportChange],
+    )
+
+    const setNodeHover = useCallback(
+      (hover: {node: CallTreeNode; event: MouseEvent} | null) => {
+        onNodeHover(hover)
+      },
+      [onNodeHover],
+    )
+
+    const setSelectedNode = useCallback(
+      (node: CallTreeNode | null) => {
+        console.log('Node selected:', node?.frame.name)
+        onNodeSelect(node)
+      },
+      [onNodeSelect],
+    )
+
+    const setLogicalSpaceViewportSize = useCallback(
+      (size: Vec2) => {
+        // Only set the logical space size once to prevent viewport resizing loops
+        if (!logicalSpaceSizeInitialized.current && !size.equals(Vec2.zero)) {
+          console.log('Setting logical space size (first time):', size)
+          logicalSpaceSizeInitialized.current = true
+          onLogicalSpaceSizeChange(size)
+        }
+      },
+      [onLogicalSpaceSizeChange],
+    )
+
+    return (
+      <FlamechartSearchContextProvider
+        flamechart={flamechart}
+        selectedNode={chronoViewState.selectedNode}
+        setSelectedNode={setSelectedNode}
+        configSpaceViewportRect={chronoViewState.configSpaceViewportRect}
+        setConfigSpaceViewportRect={setConfigSpaceViewportRect}
+      >
+        <FlamechartView
+          theme={theme}
+          renderInverted={false}
+          flamechart={flamechart}
+          flamechartRenderer={flamechartRenderer}
+          canvasContext={canvasContext}
+          getCSSColorForFrame={getCSSColorForFrame}
+          {...chronoViewState}
+          setConfigSpaceViewportRect={setConfigSpaceViewportRect}
+          setNodeHover={setNodeHover}
+          setSelectedNode={setSelectedNode}
+          setLogicalSpaceViewportSize={setLogicalSpaceViewportSize}
+        />
+      </FlamechartSearchContextProvider>
+    )
+  },
+)
 
 export interface StandaloneFlamegraphProps {
   // Profile data - can be Profile object, ProfileGroup, or raw data
@@ -61,7 +237,17 @@ export function StandaloneFlamegraph({
 }: StandaloneFlamegraphProps) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [error, setError] = useState<Error | null>(null)
+  const [canvasReady, setCanvasReady] = useState(false)
+  const [viewportRect, setViewportRect] = useState<Rect | null>(null)
+  const [logicalSpaceSize, setLogicalSpaceSize] = useState<Vec2>(Vec2.zero)
+  const [selectedNode, setSelectedNode] = useState<CallTreeNode | null>(null)
+  const [hoveredNode, setHoveredNode] = useState<{node: CallTreeNode; event: MouseEvent} | null>(
+    null,
+  )
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const theme$ = useTheme()
+  const canvasContextRef = useRef<ReturnType<typeof getCanvasContext> | null>(null)
 
   // Parse profile data
   useEffect(() => {
@@ -109,33 +295,128 @@ export function StandaloneFlamegraph({
     loadProfile()
   }, [profileData, fileName, onProfileLoad, onError])
 
-  // Create active profile state
-  const activeProfileState = useMemo((): ActiveProfileState | null => {
-    if (!profile) return null
+  // Initialize viewport rect when profile loads
+  useEffect(() => {
+    if (!profile) return
+
+    // Only initialize if not already set
+    if (viewportRect) return
 
     const totalWeight = profile.getTotalWeight()
-    const totalHeight = profile.getTotalNonIdleWeight()
+
+    // Calculate the actual depth of the call tree to set viewport height
+    const getMaxDepth = (node: any, depth = 0): number => {
+      if (!node.children || node.children.length === 0) return depth
+      return Math.max(...node.children.map((child: any) => getMaxDepth(child, depth + 1)))
+    }
+
+    const maxDepth = getMaxDepth(profile.getAppendOrderCalltreeRoot())
+
+    // Start the viewport at y=-1.1 to create a small gap above the first frame (at y=0)
+    // so that the axis labels don't overlap with the frame's top border.
+    const viewportHeight = maxDepth + 2.3
+
+    const initialRect = new Rect(new Vec2(0, -1.3), new Vec2(totalWeight, viewportHeight))
+    console.log('Setting initial viewport rect:', {
+      origin: {x: initialRect.origin.x, y: initialRect.origin.y},
+      size: {x: initialRect.size.x, y: initialRect.size.y},
+      totalWeight,
+      maxDepth,
+      viewportHeight,
+    })
+    setViewportRect(initialRect)
+  }, [profile, viewportRect])
+
+  // Create active profile state
+  const activeProfileState = useMemo((): ActiveProfileState | null => {
+    if (!profile || !viewportRect) return null
 
     return {
       profile,
       index: 0,
       chronoViewState: {
-        hover: null,
-        selectedNode: null,
-        configSpaceViewportRect: new Rect(new Vec2(0, 0), new Vec2(totalWeight, totalHeight)),
-        logicalSpaceViewportSize: new Vec2(800, 600),
+        hover: hoveredNode,
+        selectedNode: selectedNode,
+        configSpaceViewportRect: viewportRect,
+        logicalSpaceViewportSize: logicalSpaceSize,
       },
       leftHeavyViewState: {
-        hover: null,
-        selectedNode: null,
-        configSpaceViewportRect: new Rect(new Vec2(0, 0), new Vec2(totalWeight, totalHeight)),
-        logicalSpaceViewportSize: new Vec2(800, 600),
+        hover: hoveredNode,
+        selectedNode: selectedNode,
+        configSpaceViewportRect: viewportRect,
+        logicalSpaceViewportSize: logicalSpaceSize,
       },
       sandwichViewState: {
         callerCallee: null,
       },
     }
-  }, [profile])
+  }, [profile, viewportRect, logicalSpaceSize, selectedNode, hoveredNode])
+
+  // Set canvas size and ready flag - run after profile is loaded
+  useLayoutEffect(() => {
+    // Only initialize canvas once profile is loaded
+    if (!profile || !activeProfileState) {
+      return
+    }
+
+    const canvas = canvasRef.current
+    const container = containerRef.current
+
+    if (canvas && container) {
+      // Only create canvas context once
+      if (!canvasContextRef.current) {
+        // Create canvas context and initialize WebGL
+        const ctx = getCanvasContext({theme: theme$, canvas})
+
+        // Wrap renderBehind to convert viewport coordinates to canvas coordinates
+        const originalRenderBehind = ctx.renderBehind.bind(ctx)
+        ctx.renderBehind = (el: Element, cb: () => void) => {
+          const elBounds = el.getBoundingClientRect()
+          const canvasBounds = canvas.getBoundingClientRect()
+
+          // Convert viewport-relative element bounds to canvas-relative bounds
+          const adjustedBounds = new DOMRect(
+            elBounds.left - canvasBounds.left,
+            elBounds.top - canvasBounds.top,
+            elBounds.width,
+            elBounds.height,
+          )
+
+          // Create a proxy element with adjusted bounds
+          const proxyEl = {
+            getBoundingClientRect: () => adjustedBounds,
+          } as Element
+
+          originalRenderBehind(proxyEl, cb)
+        }
+
+        canvasContextRef.current = ctx
+      }
+
+      const ctx = canvasContextRef.current
+
+      // Set canvas resolution to match container size
+      const rect = container.getBoundingClientRect()
+      const dpr = window.devicePixelRatio || 1
+
+      const widthInPixels = rect.width * dpr
+      const heightInPixels = rect.height * dpr
+
+      // Initialize logical space size once based on actual container size
+      if (logicalSpaceSize.equals(Vec2.zero)) {
+        console.log('Initializing logical space size:', rect.width, rect.height)
+        setLogicalSpaceSize(new Vec2(rect.width, rect.height))
+      }
+
+      // IMPORTANT: Call WebGL resize to set up the viewport properly
+      ctx.gl.resize(widthInPixels, heightInPixels, rect.width, rect.height)
+
+      // IMPORTANT: Request first frame to trigger rendering
+      ctx.requestFrame()
+
+      setCanvasReady(true)
+    }
+  }, [profile, activeProfileState, theme$, logicalSpaceSize])
 
   if (error) {
     return (
@@ -145,7 +426,7 @@ export function StandaloneFlamegraph({
     )
   }
 
-  if (!profile || !activeProfileState || !canvasRef.current) {
+  if (!profile || !activeProfileState) {
     return (
       <div style={{width, height, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
         <div>Loading profile...</div>
@@ -155,23 +436,44 @@ export function StandaloneFlamegraph({
 
   return (
     <ThemeProvider>
-      <ProfileSearchContextProvider>
-        <div style={{width, height, position: 'relative'}}>
+      <StandaloneProfileSearchContextProvider profile={profile}>
+        <div
+          ref={containerRef}
+          style={{
+            width,
+            height,
+            position: 'relative',
+            overflow: 'hidden',
+            fontFamily: '"Source Code Pro", Courier, monospace',
+            fontSize: '10px',
+            lineHeight: '20px',
+          }}
+        >
           <canvas
             ref={canvasRef}
             style={{
               position: 'absolute',
+              top: 0,
+              left: 0,
               width: '100%',
               height: '100%',
               zIndex: -1,
+              pointerEvents: 'none',
             }}
           />
-          <ChronoFlamechartView
-            activeProfileState={activeProfileState}
-            glCanvas={canvasRef.current}
-          />
+          {canvasReady && canvasRef.current && activeProfileState && canvasContextRef.current && (
+            <StandaloneChronoFlamechartView
+              activeProfileState={activeProfileState}
+              glCanvas={canvasRef.current}
+              canvasContext={canvasContextRef.current}
+              onViewportChange={setViewportRect}
+              onLogicalSpaceSizeChange={setLogicalSpaceSize}
+              onNodeSelect={setSelectedNode}
+              onNodeHover={setHoveredNode}
+            />
+          )}
         </div>
-      </ProfileSearchContextProvider>
+      </StandaloneProfileSearchContextProvider>
     </ThemeProvider>
   )
 }

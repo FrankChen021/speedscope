@@ -1,36 +1,80 @@
 {
   "name": "@frankchen029/speedscope",
-  "version": "1.23.1",
-  "description": "",
-  "repository": "FrankChen021/speedscope",
-  "main": "index.js",
+  "version": "1.23.103",
+  "description": "Interactive flamegraph visualization component for React - converted from Preact",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FrankChen021/speedscope.git"
+  },
+  "homepage": "https://github.com/FrankChen021/speedscope#readme",
+  "bugs": {
+    "url": "https://github.com/FrankChen021/speedscope/issues"
+  },
+  "keywords": [
+    "flamegraph",
+    "flame-graph",
+    "profiling",
+    "performance",
+    "react",
+    "visualization",
+    "chrome",
+    "firefox",
+    "safari",
+    "profile",
+    "cpu-profile",
+    "webgl"
+  ],
+  "main": "dist/lib/index.js",
+  "module": "dist/lib/index.esm.js",
+  "types": "dist/lib/index.d.ts",
   "bin": {
-    "speedscope": "./bin/cli.mjs"
+    "speedscope": "bin/cli.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/lib/index.d.ts",
+      "import": "./dist/lib/index.esm.js",
+      "require": "./dist/lib/index.js"
+    },
+    "./standalone": {
+      "types": "./dist/lib/standalone.d.ts",
+      "import": "./dist/lib/standalone.esm.js",
+      "require": "./dist/lib/standalone.js"
+    },
+    "./assets/reset.css": "./dist/lib/assets/reset.css",
+    "./assets/source-code-pro.css": "./dist/lib/assets/source-code-pro.css"
   },
   "scripts": {
     "deploy": "./scripts/deploy.sh",
-    "prepack": "./scripts/prepack.sh --outdir \"$(pwd)/dist/release\" --protocol file",
-    "build": "npm run prepack",
+    "build:release": "./scripts/prepack.sh --outdir \"$(pwd)/dist/release\" --protocol file",
+    "build": "npm run build:release",
     "build:lib": "tsx scripts/build-lib.ts",
+    "prepublishOnly": "npm run typecheck && npm run build:lib",
     "prettier": "prettier --write 'src/**/*.ts' 'src/**/*.tsx'",
     "lint": "eslint 'src/**/*.ts' 'src/**/*.tsx'",
     "jest": "./scripts/test-setup.sh && jest --runInBand",
     "coverage": "npm run jest -- --coverage",
     "typecheck": "tsc --noEmit",
     "test": "./scripts/ci.sh",
-    "serve": "tsx scripts/dev-server.ts"
+    "serve": "tsx scripts/dev-server.ts",
+    "test:standalone": "tsx scripts/test-server.ts"
   },
   "files": [
+    "dist/lib/**/*",
     "bin/cli.mjs",
-    "dist/release/**",
-    "!*.map"
+    "README.md",
+    "LICENSE"
   ],
   "browserslist": [
     "last 2 Chrome versions",
     "last 2 Firefox versions"
   ],
-  "author": "",
+  "author": "Frank Chen <frankchen021@gmail.com>",
   "license": "MIT",
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
   "devDependencies": {
     "@types/jest": "22.2.3",
     "@types/jszip": "3.1.4",
@@ -83,6 +127,7 @@
     ]
   },
   "dependencies": {
+    "aphrodite": "^2.1.0",
     "open": "10.1.0"
   }
 }
