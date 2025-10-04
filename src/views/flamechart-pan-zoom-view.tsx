@@ -348,10 +348,10 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
     matchedFrameBatch.fill(ctx, theme.searchMatchPrimaryColor)
     matchedTextHighlightBatch.fill(ctx, theme.searchMatchSecondaryColor)
     fadedLabelBatch.fill(ctx, theme.fgSecondaryColor)
-    const textColor =
-      this.props.searchResults != null ? theme.searchMatchTextColor : theme.fgPrimaryColor
-    console.log('Text color being used:', textColor, 'Theme:', theme.fgPrimaryColor)
-    labelBatch.fill(ctx, textColor)
+    labelBatch.fill(
+      ctx,
+      this.props.searchResults != null ? theme.searchMatchTextColor : theme.fgPrimaryColor,
+    )
     indirectlySelectedOutlineBatch.stroke(ctx, theme.selectionSecondaryColor, frameOutlineWidth)
     directlySelectedOutlineBatch.stroke(ctx, theme.selectionPrimaryColor, frameOutlineWidth)
 

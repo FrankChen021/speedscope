@@ -127,20 +127,6 @@ const StandaloneChronoFlamechartView = memo(
         // Only update if the rect actually changed to prevent infinite loops
         const lastRect = lastViewportRef.current
 
-        // Log the comparison for debugging
-        console.log('setConfigSpaceViewportRect called:', {
-          newRect: {x: rect.origin.x, y: rect.origin.y, w: rect.size.x, h: rect.size.y},
-          lastRect: lastRect
-            ? {x: lastRect.origin.x, y: lastRect.origin.y, w: lastRect.size.x, h: lastRect.size.y}
-            : null,
-          equal:
-            lastRect &&
-            lastRect.origin.x === rect.origin.x &&
-            lastRect.origin.y === rect.origin.y &&
-            lastRect.size.x === rect.size.x &&
-            lastRect.size.y === rect.size.y,
-        })
-
         if (
           !lastRect ||
           lastRect.origin.x !== rect.origin.x ||
@@ -148,7 +134,6 @@ const StandaloneChronoFlamechartView = memo(
           lastRect.size.x !== rect.size.x ||
           lastRect.size.y !== rect.size.y
         ) {
-          console.log('Viewport changed, updating')
           lastViewportRef.current = rect
           onViewportChange(rect)
         }
@@ -165,7 +150,6 @@ const StandaloneChronoFlamechartView = memo(
 
     const setSelectedNode = useCallback(
       (node: CallTreeNode | null) => {
-        console.log('Node selected:', node?.frame.name)
         onNodeSelect(node)
       },
       [onNodeSelect],
@@ -175,7 +159,6 @@ const StandaloneChronoFlamechartView = memo(
       (size: Vec2) => {
         // Only set the logical space size once to prevent viewport resizing loops
         if (!logicalSpaceSizeInitialized.current && !size.equals(Vec2.zero)) {
-          console.log('Setting logical space size (first time):', size)
           logicalSpaceSizeInitialized.current = true
           onLogicalSpaceSizeChange(size)
         }
@@ -321,13 +304,6 @@ export function StandaloneFlamegraph({
     const viewportHeight = maxReasonableDepth + 1.0
 
     const initialRect = new Rect(new Vec2(0, -1.3), new Vec2(totalWeight, viewportHeight))
-    console.log('Setting initial viewport rect:', {
-      origin: {x: initialRect.origin.x, y: initialRect.origin.y},
-      size: {x: initialRect.size.x, y: initialRect.size.y},
-      totalWeight,
-      maxDepth,
-      viewportHeight,
-    })
     setViewportRect(initialRect)
   }, [profile, viewportRect])
 
@@ -408,7 +384,6 @@ export function StandaloneFlamegraph({
 
       // Initialize logical space size once based on actual container size
       if (logicalSpaceSize.equals(Vec2.zero)) {
-        console.log('Initializing logical space size:', rect.width, rect.height)
         setLogicalSpaceSize(new Vec2(rect.width, rect.height))
       }
 
