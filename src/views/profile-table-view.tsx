@@ -1,4 +1,5 @@
-import {h, JSX, ComponentChild} from 'preact'
+import * as React from 'react'
+import {memo} from 'react'
 import {StyleSheet, css} from 'aphrodite'
 import {Profile, Frame} from '../lib/profile'
 import {formatPercent} from '../lib/utils'
@@ -6,8 +7,7 @@ import {FontSize, Sizes, commonStyle} from './style'
 import {ColorChit} from './color-chit'
 import {ListItem, ScrollableListView} from './scrollable-list-view'
 import {createGetCSSColorForFrame, getFrameToColorBucket} from '../app-state/getters'
-import {memo} from 'preact/compat'
-import {useCallback, useMemo, useContext} from 'preact/hooks'
+import {useCallback, useMemo, useContext} from 'react'
 import {SandwichViewContext} from './sandwich-view'
 import {Color} from '../lib/color'
 import {useTheme, withTheme} from './themes/theme'
@@ -80,8 +80,8 @@ function highlightRanges(
   text: string,
   ranges: [number, number][],
   highlightedClassName: string,
-): JSX.Element {
-  const spans: ComponentChild[] = []
+): React.JSX.Element {
+  const spans: React.ReactNode[] = []
   let last = 0
   for (let range of ranges) {
     spans.push(text.slice(last, range[0]))
@@ -170,7 +170,7 @@ export const ProfileTableView = memo(
     const style = getStyle(useTheme())
 
     const onSortClick = useCallback(
-      (field: SortField, ev: MouseEvent) => {
+      (field: SortField, ev: React.MouseEvent) => {
         ev.preventDefault()
 
         if (sortMethod.field == field) {
@@ -269,15 +269,15 @@ export const ProfileTableView = memo(
     )
 
     const onTotalClick = useCallback(
-      (ev: MouseEvent) => onSortClick(SortField.TOTAL, ev),
+      (ev: React.MouseEvent<HTMLTableHeaderCellElement>) => onSortClick(SortField.TOTAL, ev),
       [onSortClick],
     )
     const onSelfClick = useCallback(
-      (ev: MouseEvent) => onSortClick(SortField.SELF, ev),
+      (ev: React.MouseEvent<HTMLTableHeaderCellElement>) => onSortClick(SortField.SELF, ev),
       [onSortClick],
     )
     const onSymbolNameClick = useCallback(
-      (ev: MouseEvent) => onSortClick(SortField.SYMBOL_NAME, ev),
+      (ev: React.MouseEvent<HTMLTableHeaderCellElement>) => onSortClick(SortField.SYMBOL_NAME, ev),
       [onSortClick],
     )
 

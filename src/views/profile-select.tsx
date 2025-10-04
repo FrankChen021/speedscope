@@ -1,6 +1,7 @@
 import {Profile} from '../lib/profile'
-import {h, JSX, ComponentChild, Ref} from 'preact'
-import {useCallback, useState, useMemo, useEffect, useRef} from 'preact/hooks'
+import * as React from 'react'
+import {Ref} from 'react'
+import {useCallback, useState, useMemo, useEffect, useRef} from 'react'
 import {StyleSheet, css} from 'aphrodite'
 import {ZIndex, Sizes, FontSize} from './style'
 import {fuzzyMatchStrings} from '../lib/fuzzy-find'
@@ -40,8 +41,8 @@ function highlightRanges(
   text: string,
   ranges: [number, number][],
   highlightedClassName: string,
-): JSX.Element {
-  const spans: ComponentChild[] = []
+): React.JSX.Element {
+  const spans: React.ReactNode[] = []
   let last = 0
   for (let range of ranges) {
     spans.push(text.slice(last, range[0]))
@@ -97,7 +98,7 @@ export function ProfileSelectRow({
   }, [closeProfileSelect, setProfileIndexToView, indexInProfileGroup])
 
   const onMouseEnter = useCallback(
-    (ev: Event) => {
+    (ev: React.MouseEvent<HTMLTableRowElement>) => {
       setHoveredProfileIndex(indexInProfileGroup)
     },
     [setHoveredProfileIndex, indexInProfileGroup],
@@ -215,7 +216,7 @@ export function ProfileSelect({
   })
 
   const onFilterTextChange = useCallback(
-    (ev: Event) => {
+    (ev: React.FormEvent<HTMLInputElement>) => {
       const value = (ev.target as HTMLInputElement).value
       setFilterText(value)
     },
@@ -236,7 +237,7 @@ export function ProfileSelect({
   )
 
   const onSortClick = useCallback(
-    (field: SortField, ev: MouseEvent) => {
+    (field: SortField, ev: React.MouseEvent) => {
       ev.preventDefault()
       ev.stopPropagation()
 
@@ -290,7 +291,7 @@ export function ProfileSelect({
   // work well for some composition methods (e.g. a Chinese character
   // composition keyboard input method).
   const onFilterKeyUp = useCallback(
-    (ev: KeyboardEvent) => {
+    (ev: React.KeyboardEvent<HTMLInputElement>) => {
       // Prevent the key-press from propagating to other keyboard shortcut
       // handlers in other components.
       ev.stopPropagation()
@@ -383,17 +384,17 @@ export function ProfileSelect({
   )
 
   const onNameClick = useCallback(
-    (ev: MouseEvent) => onSortClick(SortField.NAME, ev),
+    (ev: React.MouseEvent<HTMLTableHeaderCellElement>) => onSortClick(SortField.NAME, ev),
     [onSortClick],
   )
 
   const onWeightClick = useCallback(
-    (ev: MouseEvent) => onSortClick(SortField.WEIGHT, ev),
+    (ev: React.MouseEvent<HTMLTableHeaderCellElement>) => onSortClick(SortField.WEIGHT, ev),
     [onSortClick],
   )
 
   const onIndexClick = useCallback(
-    (ev: MouseEvent) => onSortClick(SortField.INDEX, ev),
+    (ev: React.MouseEvent<HTMLTableHeaderCellElement>) => onSortClick(SortField.INDEX, ev),
     [onSortClick],
   )
 
@@ -416,8 +417,8 @@ export function ProfileSelect({
             value={filterText}
             onInput={onFilterTextChange}
             onKeyDown={onFilterKeyUp}
-            onKeyUp={stopPropagation}
-            onKeyPress={stopPropagation}
+            onKeyUp={stopPropagation as any}
+            onKeyPress={stopPropagation as any}
           />
         </div>
         <div className={css(style.profileSelectScrolling)}>

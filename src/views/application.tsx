@@ -1,7 +1,7 @@
 import '../../assets/reset.css'
 import '../../assets/source-code-pro.css'
 
-import {h} from 'preact'
+import * as React from 'react'
 import {StyleSheet, css} from 'aphrodite'
 
 import {ProfileGroup, SymbolRemapper} from '../lib/profile'
@@ -305,7 +305,7 @@ export class Application extends StatelessComponent<ApplicationProps> {
     })
   }
 
-  onDrop = (ev: DragEvent) => {
+  onDrop = (ev: React.DragEvent<HTMLDivElement>) => {
     this.props.setDragActive(false)
     ev.preventDefault()
 
@@ -336,12 +336,12 @@ export class Application extends StatelessComponent<ApplicationProps> {
     }
   }
 
-  onDragOver = (ev: DragEvent) => {
+  onDragOver = (ev: React.DragEvent<HTMLDivElement>) => {
     this.props.setDragActive(true)
     ev.preventDefault()
   }
 
-  onDragLeave = (ev: DragEvent) => {
+  onDragLeave = (ev: React.DragEvent<HTMLDivElement>) => {
     this.props.setDragActive(false)
     ev.preventDefault()
   }
@@ -381,10 +381,17 @@ export class Application extends StatelessComponent<ApplicationProps> {
     }
   }
 
+  private onFileSelectNative = (ev: Event) => {
+    const file = (ev.target as HTMLInputElement).files!.item(0)
+    if (file) {
+      this.loadFromFile(file)
+    }
+  }
+
   private browseForFile = () => {
     const input = document.createElement('input')
     input.type = 'file'
-    input.addEventListener('change', this.onFileSelect)
+    input.addEventListener('change', this.onFileSelectNative)
     input.click()
   }
 
@@ -460,7 +467,7 @@ export class Application extends StatelessComponent<ApplicationProps> {
     }
   }
 
-  onFileSelect = (ev: Event) => {
+  onFileSelect = (ev: React.ChangeEvent<HTMLInputElement>) => {
     const file = (ev.target as HTMLInputElement).files!.item(0)
     if (file) {
       this.loadFromFile(file)
@@ -506,7 +513,7 @@ export class Application extends StatelessComponent<ApplicationProps> {
               onChange={this.onFileSelect}
               className={css(style.hide)}
             />
-            <label for="file" className={css(style.browseButton)} tabIndex={0}>
+            <label htmlFor="file" className={css(style.browseButton)} tabIndex={0}>
               Browse
             </label>
           </div>

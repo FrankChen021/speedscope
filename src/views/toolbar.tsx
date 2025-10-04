@@ -1,6 +1,6 @@
 import {ApplicationProps} from './application'
-import {h, JSX, Fragment} from 'preact'
-import {useCallback, useState, useEffect} from 'preact/hooks'
+import {Fragment} from 'react'
+import {useCallback, useState, useEffect} from 'react'
 import {StyleSheet, css} from 'aphrodite'
 import {Sizes, FontFamily, FontSize, Duration} from './style'
 import {ProfileSelect} from './profile-select'

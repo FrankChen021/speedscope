@@ -11,7 +11,8 @@ import {
   remapRangesToTrimmedText,
 } from '../lib/text-utils'
 import {getFlamechartStyle} from './flamechart-style'
-import {h, Component} from 'preact'
+import * as React from 'react'
+import {Component} from 'react'
 import {css} from 'aphrodite'
 import {ProfileSearchResults} from '../lib/profile-search'
 import {BatchCanvasTextRenderer, BatchCanvasRectRenderer} from '../lib/canvas-2d-batch-renderers'
@@ -558,15 +559,17 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
 
   private lastDragPos: Vec2 | null = null
   private mouseDownPos: Vec2 | null = null
-  private onMouseDown = (ev: MouseEvent) => {
-    this.mouseDownPos = this.lastDragPos = new Vec2(ev.offsetX, ev.offsetY)
+  private onMouseDown = (ev: React.MouseEvent<HTMLDivElement>) => {
+    const nativeEv = ev.nativeEvent as MouseEvent
+    this.mouseDownPos = this.lastDragPos = new Vec2(nativeEv.offsetX, nativeEv.offsetY)
     this.updateCursor()
     window.addEventListener('mouseup', this.onWindowMouseUp)
   }
 
-  private onMouseDrag = (ev: MouseEvent) => {
+  private onMouseDrag = (ev: React.MouseEvent<HTMLDivElement>) => {
     if (!this.lastDragPos) return
-    const logicalMousePos = new Vec2(ev.offsetX, ev.offsetY)
+    const nativeEv = ev.nativeEvent as MouseEvent
+    const logicalMousePos = new Vec2(nativeEv.offsetX, nativeEv.offsetY)
     this.pan(this.lastDragPos.minus(logicalMousePos))
     this.lastDragPos = logicalMousePos
 
@@ -577,7 +580,7 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
     }
   }
 
-  private onDblClick = (ev: MouseEvent) => {
+  private onDblClick = (ev: React.MouseEvent<HTMLDivElement>) => {
     if (this.hoveredLabel) {
       const hoveredBounds = this.hoveredLabel.configSpaceBounds
       const viewportRect = new Rect(
@@ -588,8 +591,9 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
     }
   }
 
-  private onClick = (ev: MouseEvent) => {
-    const logicalMousePos = new Vec2(ev.offsetX, ev.offsetY)
+  private onClick = (ev: React.MouseEvent<HTMLDivElement>) => {
+    const nativeEv = ev.nativeEvent as MouseEvent
+    const logicalMousePos = new Vec2(nativeEv.offsetX, nativeEv.offsetY)
     const mouseDownPos = this.mouseDownPos
     this.mouseDownPos = null
 
@@ -622,7 +626,7 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
     window.removeEventListener('mouseup', this.onWindowMouseUp)
   }
 
-  private onMouseMove = (ev: MouseEvent) => {
+  private onMouseMove = (ev: React.MouseEvent<HTMLDivElement>) => {
     this.updateCursor()
     if (this.lastDragPos) {
       ev.preventDefault()
@@ -630,7 +634,8 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
       return
     }
 
-    const logicalViewSpaceMouse = new Vec2(ev.offsetX, ev.offsetY)
+    const nativeEv = ev.nativeEvent as MouseEvent
+    const logicalViewSpaceMouse = new Vec2(nativeEv.offsetX, nativeEv.offsetY)
     const physicalViewSpaceMouse =
       this.logicalToPhysicalViewSpace().transformPosition(logicalViewSpaceMouse)
     const configSpaceMouse =
@@ -677,7 +682,7 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
     }
 
     if (this.hoveredLabel) {
-      this.props.onNodeHover({node: this.hoveredLabel!.node, event: ev})
+      this.props.onNodeHover({node: this.hoveredLabel!.node, event: ev.nativeEvent})
     } else {
       this.props.onNodeHover(null)
     }
@@ -685,21 +690,22 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
     this.renderCanvas()
   }
 
-  private onMouseLeave = (ev: MouseEvent) => {
+  private onMouseLeave = (ev: React.MouseEvent<HTMLDivElement>) => {
     this.hoveredLabel = null
     this.props.onNodeHover(null)
     this.renderCanvas()
   }
 
-  private onWheel = (ev: WheelEvent) => {
+  private onWheel = (ev: React.WheelEvent<HTMLDivElement>) => {
     ev.preventDefault()
     this.frameHadWheelEvent = true
 
     const isZoom = ev.metaKey || ev.ctrlKey
+    const nativeEv = ev.nativeEvent as WheelEvent
 
     let deltaY = ev.deltaY
     let deltaX = ev.deltaX
-    if (ev.deltaMode === ev.DOM_DELTA_LINE) {
+    if (ev.deltaMode === WheelEvent.DOM_DELTA_LINE) {
       deltaY *= this.LOGICAL_VIEW_SPACE_FRAME_HEIGHT
       deltaX *= this.LOGICAL_VIEW_SPACE_FRAME_HEIGHT
     }
@@ -716,7 +722,7 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
 
       multiplier = clamp(multiplier, 0.1, 10.0)
 
-      this.zoom(new Vec2(ev.offsetX, ev.offsetY), multiplier)
+      this.zoom(new Vec2(nativeEv.offsetX, nativeEv.offsetY), multiplier)
     } else if (this.interactionLock !== 'zoom') {
       this.pan(new Vec2(deltaX, deltaY))
     }
@@ -803,7 +809,7 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
         onMouseMove={this.onMouseMove}
         onMouseLeave={this.onMouseLeave}
         onClick={this.onClick}
-        onDblClick={this.onDblClick}
+        onDoubleClick={this.onDblClick}
         onWheel={this.onWheel}
         ref={this.containerRef}
       >

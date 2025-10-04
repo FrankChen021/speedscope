@@ -1,5 +1,5 @@
-import {memo} from 'preact/compat'
-import {useContext, useMemo, useCallback} from 'preact/hooks'
+import {memo} from 'react'
+import {useContext, useMemo, useCallback} from 'react'
 import {SearchView, ProfileSearchContext} from './search-view'
 import {
   FlamechartSearchMatch,
@@ -7,7 +7,7 @@ import {
   ProfileSearchResults,
 } from '../lib/profile-search'
 import {Rect, Vec2} from '../lib/math'
-import {h, createContext, ComponentChildren} from 'preact'
+import {createContext, ReactNode} from 'react'
 import {Flamechart} from '../lib/flamechart'
 import {CallTreeNode} from '../lib/profile'
 
@@ -19,7 +19,7 @@ export interface FlamechartSearchProps {
   setSelectedNode: (node: CallTreeNode | null) => void
   configSpaceViewportRect: Rect
   setConfigSpaceViewportRect: (rect: Rect) => void
-  children: ComponentChildren
+  children: ReactNode
 }
 
 interface FlamechartSearchData {

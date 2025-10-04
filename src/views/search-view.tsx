@@ -1,7 +1,6 @@
 import {StyleSheet, css} from 'aphrodite'
-import {h, createContext, ComponentChildren, Fragment} from 'preact'
-import {useCallback, useRef, useEffect, useMemo} from 'preact/hooks'
-import {memo} from 'preact/compat'
+import {createContext, ReactNode, Fragment, memo} from 'react'
+import {useCallback, useRef, useEffect, useMemo} from 'react'
 import {Sizes, FontSize} from './style'
 import {ProfileSearchResults} from '../lib/profile-search'
 import {Profile} from '../lib/profile'
@@ -16,7 +15,7 @@ function stopPropagation(ev: Event) {
 
 export const ProfileSearchContext = createContext<ProfileSearchResults | null>(null)
 
-export const ProfileSearchContextProvider = ({children}: {children: ComponentChildren}) => {
+export const ProfileSearchContextProvider = ({children}: {children: ReactNode}) => {
   const activeProfileState = useActiveProfileState()
   const profile: Profile | null = activeProfileState ? activeProfileState.profile : null
   const searchIsActive = useAtom(searchIsActiveAtom)
@@ -51,7 +50,7 @@ export const SearchView = memo(
     const setSearchIsActive = searchIsActiveAtom.set
 
     const onInput = useCallback(
-      (ev: Event) => {
+      (ev: React.FormEvent<HTMLInputElement>) => {
         const value = (ev.target as HTMLInputElement).value
         setSearchQuery(value)
       },
@@ -63,7 +62,7 @@ export const SearchView = memo(
     const close = useCallback(() => setSearchIsActive(false), [setSearchIsActive])
 
     const selectPrevOrNextResult = useCallback(
-      (ev: KeyboardEvent) => {
+      (ev: React.KeyboardEvent<HTMLInputElement>) => {
         if (ev.shiftKey) {
           selectPrev()
         } else {
@@ -74,7 +73,7 @@ export const SearchView = memo(
     )
 
     const onKeyDown = useCallback(
-      (ev: KeyboardEvent) => {
+      (ev: React.KeyboardEvent<HTMLInputElement>) => {
         ev.stopPropagation()
 
         // Hitting Esc should close the search box
@@ -141,8 +140,8 @@ export const SearchView = memo(
             value={searchQuery}
             onInput={onInput}
             onKeyDown={onKeyDown}
-            onKeyUp={stopPropagation}
-            onKeyPress={stopPropagation}
+            onKeyUp={stopPropagation as any}
+            onKeyPress={stopPropagation as any}
             ref={inputRef}
           />
         </span>

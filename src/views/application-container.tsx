@@ -1,6 +1,5 @@
-import {h} from 'preact'
 import {getCanvasContext} from '../app-state/getters'
-import {memo, useMemo} from 'preact/compat'
+import {memo, useMemo} from 'react'
 import {useActiveProfileState} from '../app-state/active-profile-state'
 import {useTheme} from './themes/theme'
 import {

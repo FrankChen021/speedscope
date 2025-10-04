@@ -1,4 +1,4 @@
-import {h, Fragment} from 'preact'
+import {Fragment} from 'react'
 import {css} from 'aphrodite'
 
 import {CallTreeNode} from '../lib/profile'

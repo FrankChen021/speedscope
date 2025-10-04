@@ -1,4 +1,3 @@
-import {h} from 'preact'
 import {StyleSheet, css} from 'aphrodite'
 import {FontSize} from './style'
 import {useTheme, withTheme} from './themes/theme'

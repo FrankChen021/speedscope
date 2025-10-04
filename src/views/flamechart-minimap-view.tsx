@@ -1,4 +1,5 @@
-import {h, Component} from 'preact'
+import * as React from 'react'
+import {Component} from 'react'
 import {css} from 'aphrodite'
 import {Flamechart} from '../lib/flamechart'
 import {Rect, Vec2, AffineTransform, clamp} from '../lib/math'
@@ -277,7 +278,7 @@ export class FlamechartMinimapView extends Component<FlamechartMinimapViewProps,
     this.props.transformViewport(zoomTransform)
   }
 
-  private onWheel = (ev: WheelEvent) => {
+  private onWheel = (ev: React.WheelEvent<HTMLDivElement>) => {
     ev.preventDefault()
 
     this.frameHadWheelEvent = true
@@ -316,8 +317,8 @@ export class FlamechartMinimapView extends Component<FlamechartMinimapViewProps,
   private dragStartConfigSpaceMouse: Vec2 | null = null
   private dragConfigSpaceViewportOffset: Vec2 | null = null
   private draggingMode: DraggingMode | null = null
-  private onMouseDown = (ev: MouseEvent) => {
-    const configSpaceMouse = this.configSpaceMouse(ev)
+  private onMouseDown = (ev: React.MouseEvent<HTMLDivElement>) => {
+    const configSpaceMouse = this.configSpaceMouse(ev.nativeEvent as MouseEvent)
 
     if (configSpaceMouse) {
       if (this.props.configSpaceViewportRect.contains(configSpaceMouse)) {
@@ -396,8 +397,8 @@ export class FlamechartMinimapView extends Component<FlamechartMinimapViewProps,
     }
   }
 
-  private onMouseMove = (ev: MouseEvent) => {
-    const configSpaceMouse = this.configSpaceMouse(ev)
+  private onMouseMove = (ev: React.MouseEvent<HTMLDivElement>) => {
+    const configSpaceMouse = this.configSpaceMouse(ev.nativeEvent as MouseEvent)
     if (!configSpaceMouse) return
     this.updateCursor(configSpaceMouse)
   }

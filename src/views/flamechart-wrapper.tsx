@@ -1,6 +1,5 @@
 import {CallTreeNode} from '../lib/profile'
 import {StyleSheet, css} from 'aphrodite'
-import {h} from 'preact'
 import {commonStyle} from './style'
 import {Rect, AffineTransform, Vec2} from '../lib/math'
 import {FlamechartPanZoomView} from './flamechart-pan-zoom-view'

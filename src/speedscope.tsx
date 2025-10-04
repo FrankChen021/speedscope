@@ -1,4 +1,4 @@
-import {h, render} from 'preact'
+import {createRoot} from 'react-dom/client'
 import {ApplicationContainer} from './views/application-container'
 import {ThemeProvider} from './views/themes/theme'
 
@@ -10,16 +10,15 @@ declare const module: any
 if (module.hot) {
   module.hot.dispose(() => {
     // Force the old component go through teardown steps
-    render(<div />, document.body, document.body.lastElementChild || undefined)
+    root.unmount()
   })
   module.hot.accept()
 }
 */
 
-render(
+const root = createRoot(document.body)
+root.render(
   <ThemeProvider>
     <ApplicationContainer />
   </ThemeProvider>,
-  document.body,
-  document.body.lastElementChild || undefined,
 )

@@ -13,8 +13,7 @@ import {
   getFrameToColorBucket,
 } from '../app-state/getters'
 import {FlamechartWrapper} from './flamechart-wrapper'
-import {h} from 'preact'
-import {memo} from 'preact/compat'
+import {memo} from 'react'
 import {useTheme} from './themes/theme'
 import {FlamechartID} from '../app-state/profile-group'
 import {flattenRecursionAtom, glCanvasAtom} from '../app-state'

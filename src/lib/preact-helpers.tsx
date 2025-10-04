@@ -1,4 +1,4 @@
-import {Component} from 'preact'
+import {Component} from 'react'
 
 export type VoidState = {
   __dummyField: void

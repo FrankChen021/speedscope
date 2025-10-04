@@ -1,8 +1,7 @@
 // A simple implementation of an efficient scrolling list view which
 // renders only items within the viewport + a couple extra items.
 
-import {h, JSX} from 'preact'
-import {useState, useCallback, useRef, useMemo, useEffect} from 'preact/hooks'
+import {useState, useCallback, useRef, useMemo, useEffect} from 'react'
 
 export interface ListItem {
   size: number

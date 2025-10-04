@@ -1,4 +1,3 @@
-import {h} from 'preact'
 import {CanvasContext} from '../gl/canvas-context'
 import {Flamechart} from '../lib/flamechart'
 import {FlamechartRenderer, FlamechartRendererOptions} from '../gl/flamechart-renderer'
@@ -13,7 +12,7 @@ import {
   getFrameToColorBucket,
 } from '../app-state/getters'
 import {Vec2, Rect} from '../lib/math'
-import {memo, useCallback} from 'preact/compat'
+import {memo, useCallback} from 'react'
 import {ActiveProfileState} from '../app-state/active-profile-state'
 import {FlamechartSearchContextProvider} from './flamechart-search-view'
 import {Theme, useTheme} from './themes/theme'

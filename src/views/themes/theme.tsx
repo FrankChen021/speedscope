@@ -1,5 +1,5 @@
-import {h, ComponentChildren, createContext} from 'preact'
-import {useCallback, useContext, useEffect, useState} from 'preact/hooks'
+import {ReactNode, createContext} from 'react'
+import {useCallback, useContext, useEffect, useState} from 'react'
 import {ColorScheme, colorSchemeAtom} from '../../app-state/color-scheme'
 import {useAtom} from '../../lib/atom'
 import {Color} from '../../lib/color'
@@ -73,7 +73,7 @@ function getTheme(colorScheme: ColorScheme, systemPrefersDarkMode: boolean) {
   }
 }
 
-export function ThemeProvider(props: {children: ComponentChildren}) {
+export function ThemeProvider(props: {children: ReactNode}) {
   const [systemPrefersDarkMode, setSystemPrefersDarkMode] = useState(
     () => matchMediaDarkColorScheme().matches,
   )

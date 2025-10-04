@@ -1,14 +1,14 @@
 import {Vec2} from '../lib/math'
 import {Sizes, FontSize, FontFamily, ZIndex} from './style'
 import {css, StyleSheet} from 'aphrodite'
-import {ComponentChildren, h} from 'preact'
+import {ReactNode} from 'react'
 import {useTheme, withTheme} from './themes/theme'
-import {useCallback} from 'preact/hooks'
+import {useCallback} from 'react'
 
 interface HovertipProps {
   containerSize: Vec2
   offset: Vec2
-  children?: ComponentChildren
+  children?: ReactNode
 }
 
 export function Hovertip(props: HovertipProps) {

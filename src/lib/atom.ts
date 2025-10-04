@@ -2,7 +2,7 @@
 //
 // All it provides is a way of specifying state "atoms" (basically a value with
 // a setter and a way to be notified when the value updates), and a single
-// preact hook to manage the subscribe/unsubscribe process for you.
+// React hook to manage the subscribe/unsubscribe process for you.
 //
 // At the moment, atoms are intended to be globally defined, but the system
 // could easily be adapted to pass down the atoms via context rather than being
@@ -55,7 +55,7 @@
 //
 // This library is inspired by https://recoiljs.org/
 
-import {useLayoutEffect, useState} from 'preact/hooks'
+import {useLayoutEffect, useState} from 'react'
 
 type AtomListener = () => void
 
