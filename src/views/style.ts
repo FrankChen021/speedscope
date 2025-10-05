@@ -16,7 +16,7 @@ export enum Sizes {
   TOOLTIP_WIDTH_MAX = 900,
   TOOLTIP_HEIGHT_MAX = 80,
   SEPARATOR_HEIGHT = 2,
-  FRAME_HEIGHT = 20,
+  FRAME_HEIGHT = 24, // Increased from 20 to 24 to better accommodate text highlighting
   TOOLBAR_HEIGHT = 20,
   TOOLBAR_TAB_HEIGHT = TOOLBAR_HEIGHT - SEPARATOR_HEIGHT,
 }

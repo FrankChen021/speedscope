@@ -80,6 +80,7 @@ const StandaloneChronoFlamechartView = memo(
     onLogicalSpaceSizeChange,
     onNodeSelect,
     onNodeHover,
+    onUserInteraction,
   }: {
     activeProfileState: ActiveProfileState
     glCanvas: HTMLCanvasElement
@@ -88,10 +89,10 @@ const StandaloneChronoFlamechartView = memo(
     onLogicalSpaceSizeChange: (size: Vec2) => void
     onNodeSelect: (node: CallTreeNode | null) => void
     onNodeHover: (hover: {node: CallTreeNode; event: MouseEvent} | null) => void
+    onUserInteraction: () => void
   }) => {
     const {profile, chronoViewState} = activeProfileState
     const theme = useTheme()
-    const lastViewportRef = useRef<Rect | null>(null)
     const logicalSpaceSizeInitialized = useRef(false)
 
     // Memoize all computed values to prevent infinite loops
@@ -130,12 +131,12 @@ const StandaloneChronoFlamechartView = memo(
     // These MUST be memoized to prevent infinite loops
     const setConfigSpaceViewportRect = useCallback(
       (rect: Rect) => {
-        // Constrain viewport to prevent scrolling above actual data
-        const maxDepth = profile.getAppendOrderCalltreeRoot()
-          ? getMaxDepth(profile.getAppendOrderCalltreeRoot())
-          : 0
-        const actualDepth = Math.min(maxDepth, 40)
-        const minY = 40 - actualDepth - 1.3 // Same calculation as initial viewport
+        // Notify parent that user is interacting
+        onUserInteraction()
+
+        // Constrain viewport to prevent scrolling above the top frame
+        // Use the same offset as initial viewport to maintain consistency
+        const minY = VIEWPORT_CONFIG.AXIS_LABEL_SPACE
 
         // Clamp the Y origin to prevent over-scrolling, but allow zoom changes to X and size
         const clampedRect = new Rect(
@@ -145,7 +146,7 @@ const StandaloneChronoFlamechartView = memo(
 
         onViewportChange(clampedRect)
       },
-      [onViewportChange, profile, getMaxDepth],
+      [onViewportChange, onUserInteraction],
     )
 
     const setNodeHover = useCallback(
@@ -218,6 +219,18 @@ export interface StandaloneFlamegraphProps {
   onError?: (error: Error) => void
 }
 
+// Viewport configuration constants
+const VIEWPORT_CONFIG = {
+  // Y offset to leave space above the top frame for axis labels
+  // Y coordinate system: y=0 is the top (root frame)
+  // The smaller the value, the more space between the top frame and the axis labels
+  AXIS_LABEL_SPACE: -1.5,
+
+  // Maximum number of stack levels to show in viewport for consistent display
+  // Reduce this number can increase the height of each method in the flamegraph
+  MAX_VISIBLE_DEPTH: 24,
+} as const
+
 export function StandaloneFlamegraph({
   profileData,
   fileName = 'profile.json',
@@ -240,6 +253,12 @@ export function StandaloneFlamegraph({
   const containerRef = useRef<HTMLDivElement>(null)
   const theme$ = useTheme()
   const canvasContextRef = useRef<ReturnType<typeof getCanvasContext> | null>(null)
+
+  // Track previous profile bounds for viewport expansion
+  const [profileBounds, setProfileBounds] = useState<{
+    totalWeight: number
+    maxDepth: number
+  } | null>(null)
 
   // Parse profile data
   useEffect(() => {
@@ -287,37 +306,55 @@ export function StandaloneFlamegraph({
     loadProfile()
   }, [profileData, fileName, onProfileLoad, onError])
 
-  // Initialize viewport rect when profile loads
+  // Track profile bounds for viewport expansion calculations
   useEffect(() => {
     if (!profile) return
 
-    // Only initialize if not already set
-    if (viewportRect) return
-
-    const totalWeight = profile.getTotalWeight()
-
-    // Calculate the actual depth of the call tree to set viewport height
+    const currentTotalWeight = profile.getTotalWeight()
     const getMaxDepth = (node: any, depth = 0): number => {
       if (!node.children || node.children.length === 0) return depth
       return Math.max(...node.children.map((child: any) => getMaxDepth(child, depth + 1)))
     }
+    const currentMaxDepth = getMaxDepth(profile.getAppendOrderCalltreeRoot())
+    const currentBounds = {totalWeight: currentTotalWeight, maxDepth: currentMaxDepth}
 
-    const maxDepth = getMaxDepth(profile.getAppendOrderCalltreeRoot())
+    // Only update bounds if they actually changed
+    if (
+      !profileBounds ||
+      currentTotalWeight !== profileBounds.totalWeight ||
+      currentMaxDepth !== profileBounds.maxDepth
+    ) {
+      setProfileBounds(currentBounds)
+    }
+  }, [profile, profileBounds])
 
-    // Start the viewport at y=-1.1 to create a small gap above the first frame (at y=0)
-    // so that the axis labels don't overlap with the frame's top border.
-    // Show more levels to make each rectangle shorter/more compact
-    const maxReasonableDepth = 40 // Fixed height for consistent display
-    const viewportHeight = maxReasonableDepth + 1.0
+  // Initialize viewport rect when profile loads
+  useEffect(() => {
+    if (!profile) return
 
-    // Prevent scrolling above the actual data by adjusting the viewport origin
-    // If we have fewer levels than maxReasonableDepth, start from a higher Y to prevent over-scrolling
-    const actualDepth = Math.min(maxDepth, maxReasonableDepth)
-    const yOffset = maxReasonableDepth - actualDepth - 1.3 // Adjust offset to prevent scrolling above data
+    const totalWeight = profile.getTotalWeight()
 
-    const initialRect = new Rect(new Vec2(0, yOffset), new Vec2(totalWeight, viewportHeight))
-    setViewportRect(initialRect)
-  }, [profile, viewportRect])
+    // Configure viewport dimensions
+    const viewportHeight = VIEWPORT_CONFIG.MAX_VISIBLE_DEPTH + 1.0
+    const yOffset = VIEWPORT_CONFIG.AXIS_LABEL_SPACE
+
+    if (!viewportRect) {
+      // First time initialization
+      const initialRect = new Rect(new Vec2(0, yOffset), new Vec2(totalWeight, viewportHeight))
+      setViewportRect(initialRect)
+    } else {
+      // Profile updated with new data - expand viewport to include new data while preserving zoom level
+      const currentZoomLevel = viewportRect.size.x / (profileBounds?.totalWeight || totalWeight)
+      const newViewportWidth = totalWeight * currentZoomLevel
+
+      const expandedRect = new Rect(
+        new Vec2(viewportRect.origin.x, yOffset),
+        new Vec2(Math.min(newViewportWidth, totalWeight), viewportHeight),
+      )
+
+      setViewportRect(expandedRect)
+    }
+  }, [profile, profileBounds])
 
   // Create active profile state
   const activeProfileState = useMemo((): ActiveProfileState | null => {
@@ -464,6 +501,7 @@ export function StandaloneFlamegraph({
               onLogicalSpaceSizeChange={setLogicalSpaceSize}
               onNodeSelect={setSelectedNode}
               onNodeHover={setHoveredNode}
+              onUserInteraction={() => {}} // No-op for now
             />
           )}
         </div>
