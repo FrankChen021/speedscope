@@ -773,7 +773,7 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
   shouldComponentUpdate() {
     return false
   }
-  componentWillReceiveProps(nextProps: FlamechartPanZoomViewProps) {
+  UNSAFE_componentWillReceiveProps(nextProps: FlamechartPanZoomViewProps) {
     if (this.props.flamechart !== nextProps.flamechart) {
       this.hoveredLabel = null
       this.renderCanvas()

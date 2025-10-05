@@ -117,7 +117,7 @@ export class GLCanvas extends StatelessComponent<GLCanvasProps> {
       this.props.canvasContext.requestFrame()
     }
   }
-  componentWillReceiveProps(nextProps: GLCanvasProps) {
+  UNSAFE_componentWillReceiveProps(nextProps: GLCanvasProps) {
     if (this.props.canvasContext !== nextProps.canvasContext) {
       if (this.props.canvasContext) {
         this.props.canvasContext.removeBeforeFrameHandler(this.maybeResize)
