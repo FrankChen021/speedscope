@@ -120,25 +120,44 @@ const StandaloneChronoFlamechartView = memo(
       [getChronoViewFlamechartRenderer, canvasContext, flamechart],
     )
 
+    // Helper function to calculate max depth
+    const getMaxDepth = useCallback((node: any, depth = 0): number => {
+      if (!node.children || node.children.length === 0) return depth
+      return Math.max(...node.children.map((child: any) => getMaxDepth(child, depth + 1)))
+    }, [])
+
     // Create custom setters that update our local state
     // These MUST be memoized to prevent infinite loops
     const setConfigSpaceViewportRect = useCallback(
       (rect: Rect) => {
+        // Constrain viewport to prevent scrolling above actual data
+        const maxDepth = profile.getAppendOrderCalltreeRoot()
+          ? getMaxDepth(profile.getAppendOrderCalltreeRoot())
+          : 0
+        const actualDepth = Math.min(maxDepth, 40)
+        const minY = 40 - actualDepth - 1.3 // Same calculation as initial viewport
+
+        // Clamp the Y origin to prevent over-scrolling
+        const clampedRect = new Rect(
+          new Vec2(rect.origin.x, Math.max(rect.origin.y, minY)),
+          rect.size,
+        )
+
         // Only update if the rect actually changed to prevent infinite loops
         const lastRect = lastViewportRef.current
 
         if (
           !lastRect ||
-          lastRect.origin.x !== rect.origin.x ||
-          lastRect.origin.y !== rect.origin.y ||
-          lastRect.size.x !== rect.size.x ||
-          lastRect.size.y !== rect.size.y
+          lastRect.origin.x !== clampedRect.origin.x ||
+          lastRect.origin.y !== clampedRect.origin.y ||
+          lastRect.size.x !== clampedRect.size.x ||
+          lastRect.size.y !== clampedRect.size.y
         ) {
-          lastViewportRef.current = rect
-          onViewportChange(rect)
+          lastViewportRef.current = clampedRect
+          onViewportChange(clampedRect)
         }
       },
-      [onViewportChange],
+      [onViewportChange, profile, getMaxDepth],
     )
 
     const setNodeHover = useCallback(
@@ -300,10 +319,15 @@ export function StandaloneFlamegraph({
     // Start the viewport at y=-1.1 to create a small gap above the first frame (at y=0)
     // so that the axis labels don't overlap with the frame's top border.
     // Show more levels to make each rectangle shorter/more compact
-    const maxReasonableDepth = Math.min(maxDepth, 40) // Show max 40 levels initially for more compact view
+    const maxReasonableDepth = 40 // Fixed height for consistent display
     const viewportHeight = maxReasonableDepth + 1.0
 
-    const initialRect = new Rect(new Vec2(0, -1.3), new Vec2(totalWeight, viewportHeight))
+    // Prevent scrolling above the actual data by adjusting the viewport origin
+    // If we have fewer levels than maxReasonableDepth, start from a higher Y to prevent over-scrolling
+    const actualDepth = Math.min(maxDepth, maxReasonableDepth)
+    const yOffset = maxReasonableDepth - actualDepth - 1.3 // Adjust offset to prevent scrolling above data
+
+    const initialRect = new Rect(new Vec2(0, yOffset), new Vec2(totalWeight, viewportHeight))
     setViewportRect(initialRect)
   }, [profile, viewportRect])
 
