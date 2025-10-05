@@ -43,7 +43,7 @@ import {
   getChronoViewFlamechart,
 } from './views/flamechart-view-container'
 import {ProfileSearchContext} from './views/search-view'
-import {ThemeProvider, ThemeContext, useTheme} from './views/themes/theme'
+import {ThemeContext, useTheme} from './views/themes/theme'
 import {lightTheme} from './views/themes/light-theme'
 import {darkTheme} from './views/themes/dark-theme'
 
@@ -137,25 +137,13 @@ const StandaloneChronoFlamechartView = memo(
         const actualDepth = Math.min(maxDepth, 40)
         const minY = 40 - actualDepth - 1.3 // Same calculation as initial viewport
 
-        // Clamp the Y origin to prevent over-scrolling
+        // Clamp the Y origin to prevent over-scrolling, but allow zoom changes to X and size
         const clampedRect = new Rect(
           new Vec2(rect.origin.x, Math.max(rect.origin.y, minY)),
           rect.size,
         )
 
-        // Only update if the rect actually changed to prevent infinite loops
-        const lastRect = lastViewportRef.current
-
-        if (
-          !lastRect ||
-          lastRect.origin.x !== clampedRect.origin.x ||
-          lastRect.origin.y !== clampedRect.origin.y ||
-          lastRect.size.x !== clampedRect.size.x ||
-          lastRect.size.y !== clampedRect.size.y
-        ) {
-          lastViewportRef.current = clampedRect
-          onViewportChange(clampedRect)
-        }
+        onViewportChange(clampedRect)
       },
       [onViewportChange, profile, getMaxDepth],
     )
