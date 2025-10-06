@@ -266,6 +266,8 @@ export function StandaloneFlamegraph({
   const [hoveredNode, setHoveredNode] = useState<{node: CallTreeNode; event: MouseEvent} | null>(
     null,
   )
+  const [canvasKey, setCanvasKey] = useState<string>('canvas-flamechart-0')
+  const canvasResetCounterRef = useRef(0)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const theme$ = useTheme()
@@ -398,14 +400,36 @@ export function StandaloneFlamegraph({
     }
   }, [profile, viewportRect, logicalSpaceSize, selectedNode, hoveredNode])
 
+  // Track previous view mode to detect transitions
+  const prevViewModeRef = useRef<ViewMode>(viewMode)
+  const needsCanvasResetRef = useRef(false)
+
   // Reset canvas state when switching to/from sandwich view
   // This must be called before any early returns to follow Rules of Hooks
   useEffect(() => {
-    if (viewMode === 'sandwich') {
-      // Clear canvas context and ready state when entering sandwich view
+    const prevViewMode = prevViewModeRef.current
+
+    // Mark that we need to reset canvas when entering OR leaving sandwich view
+    if (viewMode === 'sandwich' || prevViewMode === 'sandwich') {
+      needsCanvasResetRef.current = true
+      // Clear canvas context to force re-initialization
       canvasContextRef.current = null
+      // Set canvasReady to false to unmount StandaloneFlamechartView
       setCanvasReady(false)
+      // Change canvas key to force new canvas element
+      // When leaving sandwich, increment counter to ensure a unique key
+      if (prevViewMode === 'sandwich') {
+        canvasResetCounterRef.current += 1
+      }
+      const newKey =
+        viewMode === 'sandwich'
+          ? 'canvas-sandwich'
+          : `canvas-flamechart-${canvasResetCounterRef.current}`
+      setCanvasKey(newKey)
     }
+
+    // Update prev view mode for next render
+    prevViewModeRef.current = viewMode
   }, [viewMode])
 
   // Set canvas size and ready flag - run after profile is loaded
@@ -419,8 +443,9 @@ export function StandaloneFlamegraph({
     const container = containerRef.current
 
     if (canvas && container) {
-      // Only create canvas context once
-      if (!canvasContextRef.current) {
+      // Create canvas context if missing or if we're marked for reset
+      if (!canvasContextRef.current || needsCanvasResetRef.current) {
+        needsCanvasResetRef.current = false
         // Create canvas context and initialize WebGL
         const ctx = getCanvasContext({theme: theme$, canvas})
 
@@ -471,7 +496,7 @@ export function StandaloneFlamegraph({
 
       setCanvasReady(true)
     }
-  }, [profile, activeProfileState, theme$, logicalSpaceSize])
+  }, [profile, activeProfileState, theme$, logicalSpaceSize, viewMode, canvasKey])
 
   if (error) {
     return (
@@ -523,6 +548,7 @@ export function StandaloneFlamegraph({
           }}
         >
           <canvas
+            key={canvasKey}
             ref={canvasRef}
             style={{
               position: 'absolute',
