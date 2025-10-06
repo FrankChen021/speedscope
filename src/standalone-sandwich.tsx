@@ -30,10 +30,17 @@ import {ThemeContext, withTheme} from './views/themes/theme'
 
 // Viewport configuration constants
 const VIEWPORT_CONFIG = {
-  // Y offset to leave space above the top frame for axis labels
-  AXIS_LABEL_SPACE: -1.5,
   // Maximum number of stack levels to show in viewport
+  // Reducing this increases the height of each bar
   MAX_VISIBLE_DEPTH: 24,
+
+  // Initial Y offset for inverted flamegraphs (callers)
+  // Must match the minimum Y clamping in flamechart.ts for inverted views
+  INVERTED_MIN_Y: 0,
+
+  // Initial Y offset for non-inverted flamegraphs (callees)
+  // Must match the minimum Y clamping in flamechart.ts for non-inverted views
+  NON_INVERTED_MIN_Y: -1,
 } as const
 
 export interface StandaloneSandwichProps {
@@ -137,14 +144,13 @@ export function StandaloneSandwich({
         const calleeProfile = profile.getProfileForCalleesOf(frame)
 
         const viewportHeight = VIEWPORT_CONFIG.MAX_VISIBLE_DEPTH / 2 + 1.0
-        const yOffset = VIEWPORT_CONFIG.AXIS_LABEL_SPACE
 
         const invertedCallerViewport = new Rect(
-          new Vec2(0, yOffset),
+          new Vec2(0, VIEWPORT_CONFIG.INVERTED_MIN_Y),
           new Vec2(invertedCallerProfile.getTotalNonIdleWeight(), viewportHeight),
         )
         const calleeViewport = new Rect(
-          new Vec2(0, yOffset),
+          new Vec2(0, VIEWPORT_CONFIG.NON_INVERTED_MIN_Y),
           new Vec2(calleeProfile.getTotalWeight(), viewportHeight),
         )
 

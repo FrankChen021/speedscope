@@ -53,7 +53,7 @@ class SandwichView extends StatelessComponent<SandwichViewProps> {
         <div className={css(commonStyle.fillY, style.callersAndCallees, commonStyle.vbox)}>
           <div className={css(commonStyle.hbox, style.panZoomViewWraper)}>
             <div className={css(style.flamechartLabelParent)}>
-              <div className={css(style.flamechartLabel)}>Callers</div>
+              <div className={css(style.flamechartLabel)}>Who calls this method</div>
             </div>
             <InvertedCallerFlamegraphView
               glCanvas={this.props.glCanvas}
@@ -63,7 +63,9 @@ class SandwichView extends StatelessComponent<SandwichViewProps> {
           <div className={css(style.divider)} />
           <div className={css(commonStyle.hbox, style.panZoomViewWraper)}>
             <div className={css(style.flamechartLabelParent, style.flamechartLabelParentBottom)}>
-              <div className={css(style.flamechartLabel, style.flamechartLabelBottom)}>Callees</div>
+              <div className={css(style.flamechartLabel, style.flamechartLabelBottom)}>
+                What this method calls
+              </div>
             </div>
             <CalleeFlamegraphView
               glCanvas={this.props.glCanvas}
@@ -98,25 +100,30 @@ const getStyle = withTheme(theme =>
     flamechartLabelParent: {
       display: 'flex',
       flexDirection: 'column',
-      justifyContent: 'flex-end',
-      alignItems: 'flex-start',
+      justifyContent: 'center',
+      alignItems: 'center',
       fontSize: FontSize.TITLE,
       width: FontSize.TITLE * 1.2,
       borderRight: `1px solid ${theme.fgSecondaryColor}`,
+      overflow: 'visible',
+      minHeight: 180,
     },
     flamechartLabelParentBottom: {
-      justifyContent: 'flex-start',
+      justifyContent: 'center',
     },
     flamechartLabel: {
       transform: 'rotate(-90deg)',
-      transformOrigin: '50% 50% 0',
-      width: FontSize.TITLE * 1.2,
-      flexShrink: 1,
+      transformOrigin: 'center center',
+      whiteSpace: 'nowrap',
+      width: 180,
+      textAlign: 'center',
     },
     flamechartLabelBottom: {
       transform: 'rotate(-90deg)',
-      display: 'flex',
-      justifyContent: 'flex-end',
+      transformOrigin: 'center center',
+      whiteSpace: 'nowrap',
+      width: 180,
+      textAlign: 'center',
     },
     callersAndCallees: {
       flex: 1,
