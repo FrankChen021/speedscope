@@ -19,7 +19,7 @@ import {CanvasContext} from './gl/canvas-context'
 import {importProfileGroupFromText, importProfilesFromArrayBuffer} from './import'
 import {useAtom} from './lib/atom'
 import {Rect, Vec2} from './lib/math'
-import {Frame, Profile, ProfileGroup} from './lib/profile'
+import {CallTreeNode, Frame, Profile, ProfileGroup} from './lib/profile'
 import {ProfileSearchResults} from './lib/profile-search'
 import {SandwichViewContainer, SandwichViewContext} from './views/sandwich-view'
 import {ProfileSearchContext} from './views/search-view'
@@ -84,15 +84,17 @@ export function StandaloneSandwich({
   const [error, setError] = useState<Error | null>(null)
   const [selectedFrame, setSelectedFrame] = useState<Frame | null>(null)
   const [canvasReady, setCanvasReady] = useState(false)
+  const [hoveredNodeCaller, setHoveredNodeCaller] = useState<{
+    node: CallTreeNode
+    event: MouseEvent
+  } | null>(null)
+  const [hoveredNodeCallee, setHoveredNodeCallee] = useState<{
+    node: CallTreeNode
+    event: MouseEvent
+  } | null>(null)
   const glCanvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasContextRef = useRef<CanvasContext | null>(null)
-
-  console.log('StandaloneSandwich render:', {
-    hasProfile: !!profile,
-    hasSelectedFrame: !!selectedFrame,
-    selectedFrameName: selectedFrame?.name,
-  })
 
   // Use state instead of ref so changes trigger re-renders
   const [viewportStates, setViewportStates] = useState<{
@@ -128,22 +130,15 @@ export function StandaloneSandwich({
     const originalSetLogicalSpaceViewportSize = profileGroupAtom.setLogicalSpaceViewportSize
 
     profileGroupAtom.setSelectedFrame = (frame: Frame | null) => {
-      console.log('profileGroupAtom.setSelectedFrame called with:', frame?.name || 'null')
       setSelectedFrame(frame)
 
-      // Also update viewport states immediately
       if (frame && profile) {
-        console.log('Updating viewport states immediately for frame:', frame.name)
-
         const invertedCallerProfile = profile.getInvertedProfileForCallersOf(frame)
         const calleeProfile = profile.getProfileForCalleesOf(frame)
 
-        // To make the bars appear taller, we need to show *less* logical space
-        // in the same physical view. We'll halve the default visible depth.
         const viewportHeight = VIEWPORT_CONFIG.MAX_VISIBLE_DEPTH / 2 + 1.0
-        const yOffset = VIEWPORT_CONFIG.AXIS_LABEL_SPACE // -1.5
+        const yOffset = VIEWPORT_CONFIG.AXIS_LABEL_SPACE
 
-        // Both callers and callees use the same Y offset to leave space for axis labels
         const invertedCallerViewport = new Rect(
           new Vec2(0, yOffset),
           new Vec2(invertedCallerProfile.getTotalNonIdleWeight(), viewportHeight),
@@ -153,23 +148,15 @@ export function StandaloneSandwich({
           new Vec2(calleeProfile.getTotalWeight(), viewportHeight),
         )
 
-        console.log('Created initial viewports:', {
-          invertedCaller: {
-            width: invertedCallerProfile.getTotalNonIdleWeight(),
-            height: viewportHeight,
-          },
-          callee: {width: calleeProfile.getTotalWeight(), height: viewportHeight},
-        })
-
         setViewportStates({
           invertedCallerFlamegraph: {
-            hover: null,
+            hover: hoveredNodeCaller,
             selectedNode: null,
             configSpaceViewportRect: invertedCallerViewport,
             logicalSpaceViewportSize: Vec2.zero,
           },
           calleeFlamegraph: {
-            hover: null,
+            hover: hoveredNodeCallee,
             selectedNode: null,
             configSpaceViewportRect: calleeViewport,
             logicalSpaceViewportSize: Vec2.zero,
@@ -180,14 +167,7 @@ export function StandaloneSandwich({
       }
     }
 
-    // Override viewport setters to update our local state
     profileGroupAtom.setConfigSpaceViewportRect = (id: any, rect: Rect) => {
-      console.log('setConfigSpaceViewportRect called:', {
-        id,
-        origin: {x: rect.origin.x, y: rect.origin.y},
-        size: {x: rect.size.x, y: rect.size.y},
-      })
-
       setViewportStates(prev => {
         if (!prev) {
           return prev
@@ -215,7 +195,6 @@ export function StandaloneSandwich({
     }
 
     profileGroupAtom.setLogicalSpaceViewportSize = (id: any, size: Vec2) => {
-      console.log('setLogicalSpaceViewportSize called:', id, size)
       setViewportStates(prev => {
         if (!prev) return prev
         if (id === 'SANDWICH_INVERTED_CALLERS') {
@@ -239,26 +218,34 @@ export function StandaloneSandwich({
       })
     }
 
+    // Override setFlamechartHoveredNode to update our local hover states
+    const originalSetFlamechartHoveredNode = profileGroupAtom.setFlamechartHoveredNode
+    profileGroupAtom.setFlamechartHoveredNode = (
+      id: any,
+      hover: {node: CallTreeNode; event: MouseEvent} | null,
+    ) => {
+      if (id === 'SANDWICH_INVERTED_CALLERS') {
+        setHoveredNodeCaller(hover)
+      } else if (id === 'SANDWICH_CALLEES') {
+        setHoveredNodeCallee(hover)
+      }
+    }
+
     return () => {
       profileGroupAtom.setSelectedFrame = originalSetSelectedFrame
       profileGroupAtom.setConfigSpaceViewportRect = originalSetConfigSpaceViewportRect
       profileGroupAtom.setLogicalSpaceViewportSize = originalSetLogicalSpaceViewportSize
+      profileGroupAtom.setFlamechartHoveredNode = originalSetFlamechartHoveredNode
     }
   }, [profile])
 
-  // Initialize canvas context and manage resizing
   useLayoutEffect(() => {
     if (!glCanvasRef.current || !containerRef.current || !profile || canvasReady) return
 
     const canvas = glCanvasRef.current
     const container = containerRef.current
 
-    // IMPORTANT: Set canvas atom FIRST, before creating context
-    // This ensures flamegraph views will get the same canvas
     glCanvasAtom.set(canvas)
-
-    // Create canvas context using memoized getCanvasContext
-    // This will be cached and reused by flamegraph views
     const canvasContext = getCanvasContext({theme: forcedTheme, canvas})
 
     // Wrap renderBehind to convert viewport coordinates to canvas coordinates
@@ -267,7 +254,6 @@ export function StandaloneSandwich({
       const elBounds = el.getBoundingClientRect()
       const canvasBounds = canvas.getBoundingClientRect()
 
-      // Convert viewport-relative element bounds to canvas-relative bounds
       const adjustedBounds = new DOMRect(
         elBounds.left - canvasBounds.left,
         elBounds.top - canvasBounds.top,
@@ -275,7 +261,6 @@ export function StandaloneSandwich({
         elBounds.height,
       )
 
-      // Create a proxy element that returns adjusted bounds
       const proxyEl = {
         getBoundingClientRect: () => adjustedBounds,
       } as Element
@@ -285,35 +270,22 @@ export function StandaloneSandwich({
 
     canvasContextRef.current = canvasContext
 
-    // Resize handler
     const maybeResize = () => {
       if (!container || !canvasContext) return
       const {width, height} = container.getBoundingClientRect()
       const widthInPixels = width * window.devicePixelRatio
       const heightInPixels = height * window.devicePixelRatio
-      console.log('Canvas resize:', {
-        containerWidth: width,
-        containerHeight: height,
-        widthInPixels,
-        heightInPixels,
-        dpr: window.devicePixelRatio,
-      })
       canvasContext.gl.resize(widthInPixels, heightInPixels, width, height)
     }
 
-    // Add resize handler and trigger initial resize
     canvasContext.addBeforeFrameHandler(maybeResize)
     maybeResize()
 
-    // Request frame after a short delay to ensure components are mounted
     requestAnimationFrame(() => {
-      console.log('Requesting initial frame')
       canvasContext.requestFrame()
     })
 
     setCanvasReady(true)
-
-    // Cleanup
     return () => {
       if (canvasContext) {
         canvasContext.removeBeforeFrameHandler(maybeResize)
@@ -321,7 +293,6 @@ export function StandaloneSandwich({
     }
   }, [profile, canvasReady, forcedTheme])
 
-  // Handle window resize
   useEffect(() => {
     const onResize = () => {
       if (canvasContextRef.current) {
@@ -332,17 +303,32 @@ export function StandaloneSandwich({
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  // Request frame when selected frame changes or viewport states update
+  useEffect(() => {
+    if (viewportStates) {
+      setViewportStates(prev => {
+        if (!prev) return prev
+        return {
+          invertedCallerFlamegraph: {
+            ...prev.invertedCallerFlamegraph,
+            hover: hoveredNodeCaller,
+          },
+          calleeFlamegraph: {
+            ...prev.calleeFlamegraph,
+            hover: hoveredNodeCallee,
+          },
+        }
+      })
+    }
+  }, [hoveredNodeCaller, hoveredNodeCallee])
+
   useEffect(() => {
     if (canvasContextRef.current && selectedFrame && viewportStates) {
-      console.log('Requesting frame for selected frame:', selectedFrame.name)
       requestAnimationFrame(() => {
         canvasContextRef.current?.requestFrame()
       })
     }
   }, [selectedFrame, viewportStates])
 
-  // Parse profile data
   useEffect(() => {
     if (!profileData) return
 
@@ -386,20 +372,14 @@ export function StandaloneSandwich({
 
   const style = getStyle(forcedTheme)
 
-  // Implement search functionality
   const profileSearchResults: ProfileSearchResults | null = useMemo(() => {
     if (!profile || !searchIsActive || !searchQuery) return null
     return new ProfileSearchResults(profile, searchQuery)
   }, [profile, searchIsActive, searchQuery])
 
-  // Viewport states are now managed directly in the setSelectedFrame override above
-  // No need for a separate useEffect that would overwrite them
-
-  // Create ActiveProfileState structure
   const activeProfileState: ActiveProfileState | null = useMemo(() => {
     if (!profile) return null
 
-    // Create initial viewport states for flamegraphs
     const initialViewportRect = new Rect(new Vec2(0, 0), new Vec2(profile.getTotalWeight(), 40))
     const initialLogicalSize = Vec2.zero
 
@@ -431,7 +411,6 @@ export function StandaloneSandwich({
     }
   }, [profile, selectedFrame, viewportStates])
 
-  // Create SandwichViewContext data
   const sandwichContextData = useMemo(() => {
     if (!profile) return null
 
@@ -440,7 +419,6 @@ export function StandaloneSandwich({
       rowList.push(frame)
     })
 
-    // Sort by total weight descending by default
     rowList.sort((a, b) => b.getTotalWeight() - a.getTotalWeight())
 
     const indexByFrame = new Map<Frame, number>()
@@ -456,7 +434,7 @@ export function StandaloneSandwich({
         const index = indexByFrame.get(frame)
         return index == null ? null : index
       },
-      getSearchMatchForFrame: () => null, // No search in standalone mode
+      getSearchMatchForFrame: () => null,
     }
   }, [profile, selectedFrame])
 
@@ -490,7 +468,6 @@ export function StandaloneSandwich({
               lineHeight: '20px',
             }}
           >
-            {/* Shared WebGL canvas */}
             <canvas
               ref={glCanvasRef}
               style={{

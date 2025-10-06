@@ -74,6 +74,7 @@ interface ProfileTableRowViewProps {
   selectedFrame: Frame | null
   setSelectedFrame: (f: Frame) => void
   getCSSColorForFrame: (frame: Frame) => string
+  theme: Theme
 }
 
 function highlightRanges(
@@ -101,8 +102,9 @@ const ProfileTableRowView = ({
   selectedFrame,
   setSelectedFrame,
   getCSSColorForFrame,
+  theme,
 }: ProfileTableRowViewProps) => {
-  const style = getStyle(useTheme())
+  const style = getStyle(theme)
 
   const totalWeight = frame.getTotalWeight()
   const selfWeight = frame.getSelfWeight()
@@ -169,6 +171,7 @@ export const ProfileTableView = memo(
     searchIsActive,
     theme,
   }: ProfileTableViewProps) => {
+    const sandwichContext = useContext(SandwichViewContext)
     const style = getStyle(theme)
 
     const onSortClick = useCallback(
@@ -205,8 +208,6 @@ export const ProfileTableView = memo(
       [sortMethod, setSortMethod],
     )
 
-    const sandwichContext = useContext(SandwichViewContext)
-
     const renderItems = useCallback(
       (firstIndex: number, lastIndex: number) => {
         if (!sandwichContext) return null
@@ -225,6 +226,7 @@ export const ProfileTableView = memo(
               selectedFrame: selectedFrame,
               setSelectedFrame: setSelectedFrame,
               getCSSColorForFrame: getCSSColorForFrame,
+              theme: theme,
             }),
           )
         }
@@ -263,6 +265,7 @@ export const ProfileTableView = memo(
         searchQuery,
         style.emptyState,
         style.tableView,
+        theme,
       ],
     )
 
