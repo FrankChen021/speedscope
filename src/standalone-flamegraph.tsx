@@ -398,6 +398,16 @@ export function StandaloneFlamegraph({
     }
   }, [profile, viewportRect, logicalSpaceSize, selectedNode, hoveredNode])
 
+  // Reset canvas state when switching to/from sandwich view
+  // This must be called before any early returns to follow Rules of Hooks
+  useEffect(() => {
+    if (viewMode === 'sandwich') {
+      // Clear canvas context and ready state when entering sandwich view
+      canvasContextRef.current = null
+      setCanvasReady(false)
+    }
+  }, [viewMode])
+
   // Set canvas size and ready flag - run after profile is loaded
   useLayoutEffect(() => {
     // Only initialize canvas once profile is loaded
