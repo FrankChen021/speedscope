@@ -188,11 +188,23 @@ export class FlamechartMinimapView extends Component<FlamechartMinimapViewProps,
   componentDidMount() {
     window.addEventListener('resize', this.onWindowResize)
     this.props.canvasContext.addBeforeFrameHandler(this.onBeforeFrame)
+
+    // Add wheel event listener with passive: false to allow preventDefault
+    if (this.container) {
+      this.container.addEventListener('wheel', this.onWheelNative as EventListener, {
+        passive: false,
+      })
+    }
   }
 
   componentWillUnmount() {
     window.removeEventListener('resize', this.onWindowResize)
     this.props.canvasContext.removeBeforeFrameHandler(this.onBeforeFrame)
+
+    // Remove wheel event listener
+    if (this.container) {
+      this.container.removeEventListener('wheel', this.onWheelNative as EventListener)
+    }
   }
 
   private resizeOverlayCanvasIfNeeded() {
@@ -281,12 +293,41 @@ export class FlamechartMinimapView extends Component<FlamechartMinimapViewProps,
     this.props.transformViewport(zoomTransform)
   }
 
-  private onWheel = (ev: React.WheelEvent<HTMLDivElement>) => {
-    ev.preventDefault()
-
-    this.frameHadWheelEvent = true
-
+  // Native wheel event handler with passive: false support
+  private onWheelNative = (ev: WheelEvent) => {
     const isZoom = ev.metaKey || ev.ctrlKey
+
+    // Check if we should allow scroll propagation to parent
+    let shouldHandleScroll = true
+
+    if (!isZoom && this.interactionLock !== 'zoom') {
+      // We're in pan mode - check if we're at the scroll boundaries
+      const currentViewport = this.props.configSpaceViewportRect
+      const configSpaceSize = this.configSpaceSize()
+
+      // Calculate min and max Y boundaries
+      const minY = -1 // Minimap is not inverted
+      const maxY = Math.max(0, configSpaceSize.y - currentViewport.size.y + 1)
+
+      const scrollingUp = ev.deltaY < 0
+      const scrollingDown = ev.deltaY > 0
+      const atTop = currentViewport.origin.y <= minY
+      const atBottom = currentViewport.origin.y >= maxY
+
+      // If we're at the boundary and trying to scroll beyond it, let the parent handle it
+      if ((scrollingUp && atTop) || (scrollingDown && atBottom)) {
+        shouldHandleScroll = false
+      }
+    }
+
+    // If we're not handling the scroll, let it propagate to parent
+    if (!shouldHandleScroll) {
+      return
+    }
+
+    // We're handling the scroll, so prevent default
+    ev.preventDefault()
+    this.frameHadWheelEvent = true
 
     if (isZoom && this.interactionLock !== 'pan') {
       let multiplier = 1 + ev.deltaY / 100
@@ -433,7 +474,6 @@ export class FlamechartMinimapView extends Component<FlamechartMinimapViewProps,
     return (
       <div
         ref={this.containerRef}
-        onWheel={this.onWheel}
         onMouseDown={this.onMouseDown}
         onMouseMove={this.onMouseMove}
         onMouseLeave={this.onMouseLeave}

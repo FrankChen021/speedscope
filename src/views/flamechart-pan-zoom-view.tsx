@@ -702,8 +702,6 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
   // Native wheel event handler to support preventDefault with passive: false
   private onWheelNative = (ev: Event) => {
     const wheelEv = ev as WheelEvent
-    wheelEv.preventDefault()
-    this.frameHadWheelEvent = true
 
     const isZoom = wheelEv.metaKey || wheelEv.ctrlKey
 
@@ -713,6 +711,38 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
       deltaY *= this.LOGICAL_VIEW_SPACE_FRAME_HEIGHT
       deltaX *= this.LOGICAL_VIEW_SPACE_FRAME_HEIGHT
     }
+
+    // Check if we should allow scroll propagation to parent
+    let shouldHandleScroll = true
+
+    if (!isZoom && this.interactionLock !== 'zoom') {
+      // We're in pan mode - check if we're at the scroll boundaries
+      const currentViewport = this.props.configSpaceViewportRect
+      const configSpaceSize = this.configSpaceSize()
+
+      // Calculate min and max Y boundaries (same logic as in flamechart.ts getClampedConfigSpaceViewportRect)
+      const minY = this.props.renderInverted ? 0 : -1
+      const maxY = Math.max(0, configSpaceSize.y - currentViewport.size.y + 1)
+
+      const scrollingUp = deltaY < 0
+      const scrollingDown = deltaY > 0
+      const atTop = currentViewport.origin.y <= minY
+      const atBottom = currentViewport.origin.y >= maxY
+
+      // If we're at the boundary and trying to scroll beyond it, let the parent handle it
+      if ((scrollingUp && atTop) || (scrollingDown && atBottom)) {
+        shouldHandleScroll = false
+      }
+    }
+
+    // If we're not handling the scroll, let it propagate to parent
+    if (!shouldHandleScroll) {
+      return
+    }
+
+    // We're handling the scroll, so prevent default
+    wheelEv.preventDefault()
+    this.frameHadWheelEvent = true
 
     if (isZoom && this.interactionLock !== 'pan') {
       let multiplier = 1 + deltaY / 100
