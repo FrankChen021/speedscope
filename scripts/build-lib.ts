@@ -73,11 +73,15 @@ async function buildLib() {
   // Create standalone.d.ts with self-contained types
   const standaloneDts = `import * as React from 'react';
 
+export type ViewMode = 'time-order' | 'left-heavy' | 'sandwich';
+
 export interface StandaloneFlamegraphProps {
   profileData?: any;
   width?: number | string;
   height?: number | string;
   fileName?: string;
+  theme?: 'light' | 'dark';
+  viewMode?: ViewMode;
   onProfileLoad?: (profile: any) => void;
   onError?: (error: Error) => void;
 }
@@ -89,17 +93,35 @@ export declare function StandaloneFlamegraph(props: StandaloneFlamegraphProps): 
   // Create index.d.ts with self-contained types
   const indexDts = `import * as React from 'react';
 
+// View mode type
+export type ViewMode = 'time-order' | 'left-heavy' | 'sandwich';
+
 // Main component
 export interface StandaloneFlamegraphProps {
   profileData?: any;
   width?: number | string;
   height?: number | string;
   fileName?: string;
+  theme?: 'light' | 'dark';
+  viewMode?: ViewMode;
   onProfileLoad?: (profile: any) => void;
   onError?: (error: Error) => void;
 }
 
 export declare function StandaloneFlamegraph(props: StandaloneFlamegraphProps): React.JSX.Element;
+
+// Standalone Sandwich component
+export interface StandaloneSandwichProps {
+  profileData?: any;
+  width?: number | string;
+  height?: number | string;
+  fileName?: string;
+  theme?: 'light' | 'dark';
+  onProfileLoad?: (profile: any) => void;
+  onError?: (error: Error) => void;
+}
+
+export declare function StandaloneSandwich(props: StandaloneSandwichProps): React.JSX.Element;
 
 // Flamechart components
 export declare const ChronoFlamechartView: React.FC<any>;

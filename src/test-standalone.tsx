@@ -7,7 +7,7 @@ import '../assets/reset.css'
 import '../assets/source-code-pro.css'
 
 import {createRoot} from 'react-dom/client'
-import {StandaloneFlamegraph} from './standalone-flamegraph'
+import {StandaloneFlamegraph, ViewMode} from './standalone-flamegraph'
 import {useState} from 'react'
 
 console.log(`speedscope test page v${require('../package.json').version}`)
@@ -22,13 +22,20 @@ main;qux 25`
 function TestApp() {
   const [profileData, setProfileData] = useState<string>(sampleCollapsedStack)
   const [fileName, setFileName] = useState<string>('test.collapsedstack.txt')
+  const [viewMode, setViewMode] = useState<ViewMode>('time-order')
 
   return (
-    <div style={{padding: '20px', fontFamily: 'sans-serif'}}>
-      <h1>StandaloneFlamegraph Test Page</h1>
+    <div style={{padding: '20px'}}>
+      <h1 style={{fontFamily: 'sans-serif'}}>StandaloneFlamegraph Test Page</h1>
 
       <div
-        style={{marginBottom: '20px', padding: '10px', background: '#f0f0f0', borderRadius: '5px'}}
+        style={{
+          marginBottom: '20px',
+          padding: '10px',
+          background: '#f0f0f0',
+          borderRadius: '5px',
+          fontFamily: 'sans-serif',
+        }}
       >
         <h3>Debug Info</h3>
         <p>
@@ -40,9 +47,12 @@ function TestApp() {
         <p>
           <strong>Lines:</strong> {profileData.split('\n').length}
         </p>
+        <p>
+          <strong>View Mode:</strong> {viewMode}
+        </p>
       </div>
 
-      <div style={{marginBottom: '20px'}}>
+      <div style={{marginBottom: '20px', fontFamily: 'sans-serif'}}>
         <label>
           <strong>File Name:</strong>
           <input
@@ -54,7 +64,57 @@ function TestApp() {
         </label>
       </div>
 
-      <div style={{marginBottom: '20px'}}>
+      <div style={{marginBottom: '20px', fontFamily: 'sans-serif'}}>
+        <label>
+          <strong>View Mode:</strong>
+          <div style={{marginTop: '5px', display: 'flex', gap: '10px'}}>
+            <button
+              onClick={() => setViewMode('time-order')}
+              style={{
+                padding: '8px 16px',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                background: viewMode === 'time-order' ? '#007bff' : '#fff',
+                color: viewMode === 'time-order' ? '#fff' : '#000',
+                cursor: 'pointer',
+                fontWeight: viewMode === 'time-order' ? 'bold' : 'normal',
+              }}
+            >
+              🕰 Time Order
+            </button>
+            <button
+              onClick={() => setViewMode('left-heavy')}
+              style={{
+                padding: '8px 16px',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                background: viewMode === 'left-heavy' ? '#007bff' : '#fff',
+                color: viewMode === 'left-heavy' ? '#fff' : '#000',
+                cursor: 'pointer',
+                fontWeight: viewMode === 'left-heavy' ? 'bold' : 'normal',
+              }}
+            >
+              ⬅️ Left Heavy
+            </button>
+            <button
+              onClick={() => setViewMode('sandwich')}
+              style={{
+                padding: '8px 16px',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                background: viewMode === 'sandwich' ? '#007bff' : '#fff',
+                color: viewMode === 'sandwich' ? '#fff' : '#000',
+                cursor: 'pointer',
+                fontWeight: viewMode === 'sandwich' ? 'bold' : 'normal',
+              }}
+            >
+              🥪 Sandwich
+            </button>
+          </div>
+        </label>
+      </div>
+
+      <div style={{marginBottom: '20px', fontFamily: 'sans-serif'}}>
         <label>
           <strong>Profile Data:</strong>
           <br />
@@ -79,16 +139,18 @@ function TestApp() {
             margin: 0,
             background: '#f5f5f5',
             borderBottom: '1px solid #ccc',
+            fontFamily: 'sans-serif',
           }}
         >
           Flamegraph Output
         </h3>
-        <div style={{padding: '10px'}}>
+        <div>
           <StandaloneFlamegraph
             profileData={profileData}
             fileName={fileName}
             width="100%"
             height={600}
+            viewMode={viewMode}
             onProfileLoad={profile => {
               console.log('✅ Profile loaded successfully!')
               console.log('Profile name:', profile.getName())

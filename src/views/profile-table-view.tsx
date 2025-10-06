@@ -10,7 +10,7 @@ import {createGetCSSColorForFrame, getFrameToColorBucket} from '../app-state/get
 import {useCallback, useMemo, useContext} from 'react'
 import {SandwichViewContext} from './sandwich-view'
 import {Color} from '../lib/color'
-import {useTheme, withTheme} from './themes/theme'
+import {Theme, useTheme, withTheme} from './themes/theme'
 import {
   SortDirection,
   SortMethod,
@@ -154,6 +154,7 @@ interface ProfileTableViewProps {
   setSortMethod: (sortMethod: SortMethod) => void
   searchQuery: string
   searchIsActive: boolean
+  theme: Theme
 }
 
 export const ProfileTableView = memo(
@@ -166,8 +167,9 @@ export const ProfileTableView = memo(
     getCSSColorForFrame,
     searchQuery,
     searchIsActive,
+    theme,
   }: ProfileTableViewProps) => {
-    const style = getStyle(useTheme())
+    const style = getStyle(theme)
 
     const onSortClick = useCallback(
       (field: SortField, ev: React.MouseEvent) => {
@@ -245,7 +247,11 @@ export const ProfileTableView = memo(
           }
         }
 
-        return <table className={css(style.tableView)}>{rows}</table>
+        return (
+          <table className={css(style.tableView)}>
+            <tbody>{rows}</tbody>
+          </table>
+        )
       },
       [
         sandwichContext,
@@ -359,6 +365,7 @@ const getStyle = withTheme(theme =>
       textAlign: 'left',
       color: theme.fgPrimaryColor,
       userSelect: 'none',
+      fontWeight: 'normal',
     },
     sortIcon: {
       position: 'relative',
@@ -385,6 +392,7 @@ const getStyle = withTheme(theme =>
       paddingRight: Sizes.FRAME_HEIGHT,
       width: 6 * Sizes.FRAME_HEIGHT,
       minWidth: 6 * Sizes.FRAME_HEIGHT,
+      fontWeight: 'normal',
     },
     textCell: {
       textOverflow: 'ellipsis',
@@ -392,6 +400,7 @@ const getStyle = withTheme(theme =>
       whiteSpace: 'nowrap',
       width: '100%',
       maxWidth: 0,
+      fontWeight: 'normal',
     },
     hBarDisplay: {
       position: 'absolute',
@@ -415,7 +424,7 @@ const getStyle = withTheme(theme =>
     },
     emptyState: {
       textAlign: 'center',
-      fontWeight: 'bold',
+      fontWeight: 'normal',
     },
   }),
 )
@@ -451,6 +460,7 @@ export const ProfileTableViewContainer = memo((ownProps: ProfileTableViewContain
       setSortMethod={tableSortMethodAtom.set}
       searchIsActive={searchIsActive}
       searchQuery={searchQuery}
+      theme={theme}
     />
   )
 })

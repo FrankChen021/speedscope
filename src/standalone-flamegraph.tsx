@@ -41,11 +41,13 @@ import {FlamechartView} from './views/flamechart-view'
 import {
   createMemoizedFlamechartRenderer,
   getChronoViewFlamechart,
+  getLeftHeavyFlamechart,
 } from './views/flamechart-view-container'
 import {ProfileSearchContext} from './views/search-view'
 import {ThemeContext, useTheme} from './views/themes/theme'
 import {lightTheme} from './views/themes/light-theme'
 import {darkTheme} from './views/themes/dark-theme'
+import {StandaloneSandwich} from './standalone-sandwich'
 
 // Standalone ProfileSearchContextProvider that doesn't rely on global app state
 const StandaloneProfileSearchContextProvider = ({
@@ -71,11 +73,12 @@ const StandaloneProfileSearchContextProvider = ({
 }
 
 // Wrapper component that provides custom setters for standalone use
-const StandaloneChronoFlamechartView = memo(
+const StandaloneFlamechartView = memo(
   ({
     activeProfileState,
     glCanvas,
     canvasContext,
+    viewMode,
     onViewportChange,
     onLogicalSpaceSizeChange,
     onNodeSelect,
@@ -85,13 +88,17 @@ const StandaloneChronoFlamechartView = memo(
     activeProfileState: ActiveProfileState
     glCanvas: HTMLCanvasElement
     canvasContext: ReturnType<typeof getCanvasContext>
+    viewMode: ViewMode
     onViewportChange: (rect: Rect) => void
     onLogicalSpaceSizeChange: (size: Vec2) => void
     onNodeSelect: (node: CallTreeNode | null) => void
     onNodeHover: (hover: {node: CallTreeNode; event: MouseEvent} | null) => void
     onUserInteraction: () => void
   }) => {
-    const {profile, chronoViewState} = activeProfileState
+    const {profile, chronoViewState, leftHeavyViewState} = activeProfileState
+
+    // Select the appropriate view state based on view mode
+    const viewState = viewMode === 'left-heavy' ? leftHeavyViewState : chronoViewState
     const theme = useTheme()
     const logicalSpaceSizeInitialized = useRef(false)
 
@@ -106,19 +113,23 @@ const StandaloneChronoFlamechartView = memo(
       [theme, frameToColorBucket],
     )
 
-    const flamechart = useMemo(
-      () => getChronoViewFlamechart({profile, getColorBucketForFrame}),
-      [profile, getColorBucketForFrame],
-    )
+    // Get the appropriate flamechart based on view mode
+    const flamechart = useMemo(() => {
+      if (viewMode === 'left-heavy') {
+        return getLeftHeavyFlamechart({profile, getColorBucketForFrame})
+      } else {
+        return getChronoViewFlamechart({profile, getColorBucketForFrame})
+      }
+    }, [profile, getColorBucketForFrame, viewMode])
 
-    const getChronoViewFlamechartRenderer = useMemo(() => createMemoizedFlamechartRenderer(), [])
+    const getFlamechartRenderer = useMemo(() => createMemoizedFlamechartRenderer(), [])
     const flamechartRenderer = useMemo(
       () =>
-        getChronoViewFlamechartRenderer({
+        getFlamechartRenderer({
           canvasContext,
           flamechart,
         }),
-      [getChronoViewFlamechartRenderer, canvasContext, flamechart],
+      [getFlamechartRenderer, canvasContext, flamechart],
     )
 
     // Helper function to calculate max depth
@@ -177,9 +188,9 @@ const StandaloneChronoFlamechartView = memo(
     return (
       <FlamechartSearchContextProvider
         flamechart={flamechart}
-        selectedNode={chronoViewState.selectedNode}
+        selectedNode={viewState.selectedNode}
         setSelectedNode={setSelectedNode}
-        configSpaceViewportRect={chronoViewState.configSpaceViewportRect}
+        configSpaceViewportRect={viewState.configSpaceViewportRect}
         setConfigSpaceViewportRect={setConfigSpaceViewportRect}
       >
         <FlamechartView
@@ -189,7 +200,7 @@ const StandaloneChronoFlamechartView = memo(
           flamechartRenderer={flamechartRenderer}
           canvasContext={canvasContext}
           getCSSColorForFrame={getCSSColorForFrame}
-          {...chronoViewState}
+          {...viewState}
           setConfigSpaceViewportRect={setConfigSpaceViewportRect}
           setNodeHover={setNodeHover}
           setSelectedNode={setSelectedNode}
@@ -199,6 +210,8 @@ const StandaloneChronoFlamechartView = memo(
     )
   },
 )
+
+export type ViewMode = 'time-order' | 'left-heavy' | 'sandwich'
 
 export interface StandaloneFlamegraphProps {
   // Profile data - can be Profile object, ProfileGroup, or raw data
@@ -213,6 +226,9 @@ export interface StandaloneFlamegraphProps {
 
   // Theme
   theme?: 'light' | 'dark'
+
+  // View mode
+  viewMode?: ViewMode
 
   // Callbacks
   onProfileLoad?: (profile: Profile) => void
@@ -237,6 +253,7 @@ export function StandaloneFlamegraph({
   width = '100%',
   height = '600px',
   theme = 'light',
+  viewMode = 'time-order',
   onProfileLoad,
   onError,
 }: StandaloneFlamegraphProps) {
@@ -465,6 +482,21 @@ export function StandaloneFlamegraph({
   // Force the theme based on the prop instead of using system preferences
   const forcedTheme = theme === 'light' ? lightTheme : darkTheme
 
+  // Use StandaloneSandwich component for sandwich view
+  if (viewMode === 'sandwich') {
+    return (
+      <StandaloneSandwich
+        profileData={profile}
+        fileName={fileName}
+        width={width}
+        height={height}
+        theme={theme}
+        onProfileLoad={onProfileLoad}
+        onError={onError}
+      />
+    )
+  }
+
   return (
     <ThemeContext.Provider value={forcedTheme}>
       <StandaloneProfileSearchContextProvider profile={profile}>
@@ -493,10 +525,11 @@ export function StandaloneFlamegraph({
             }}
           />
           {canvasReady && canvasRef.current && activeProfileState && canvasContextRef.current && (
-            <StandaloneChronoFlamechartView
+            <StandaloneFlamechartView
               activeProfileState={activeProfileState}
               glCanvas={canvasRef.current}
               canvasContext={canvasContextRef.current}
+              viewMode={viewMode}
               onViewportChange={setViewportRect}
               onLogicalSpaceSizeChange={setLogicalSpaceSize}
               onNodeSelect={setSelectedNode}
