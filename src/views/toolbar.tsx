@@ -87,7 +87,7 @@ const getCachedProfileList = (() => {
   }
 })()
 
-function ToolbarCenterContent(props: ToolbarProps): JSX.Element {
+function ToolbarCenterContent(props: ToolbarProps): React.JSX.Element {
   const style = getStyle(useTheme())
 
   const {activeProfileState, profileGroup} = props

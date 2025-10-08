@@ -54,11 +54,11 @@ interface StackTraceViewProps {
 function StackTraceView(props: StackTraceViewProps) {
   const style = getFlamechartStyle(useTheme())
 
-  const rows: JSX.Element[] = []
+  const rows: React.JSX.Element[] = []
   let node: CallTreeNode | null = props.node
   let depth = 0
   for (; node && !node.isRoot(); node = node.parent) {
-    const row: (JSX.Element | string)[] = []
+    const row: (React.JSX.Element | string)[] = []
     const {frame} = node
     const key = `${frame.key}-${depth}`
 

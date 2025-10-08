@@ -212,7 +212,7 @@ export const ProfileTableView = memo(
       (firstIndex: number, lastIndex: number) => {
         if (!sandwichContext) return null
 
-        const rows: JSX.Element[] = []
+        const rows: React.JSX.Element[] = []
 
         for (let i = firstIndex; i <= lastIndex; i++) {
           const frame = sandwichContext.rowList[i]

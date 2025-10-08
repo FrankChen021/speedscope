@@ -270,8 +270,10 @@ export function StandaloneFlamegraph({
   const canvasResetCounterRef = useRef(0)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const theme$ = useTheme()
   const canvasContextRef = useRef<ReturnType<typeof getCanvasContext> | null>(null)
+  
+  // Force the theme based on the prop instead of using system preferences
+  const forcedTheme = theme === 'light' ? lightTheme : darkTheme
 
   // Track previous profile bounds for viewport expansion
   const [profileBounds, setProfileBounds] = useState<{
@@ -400,25 +402,27 @@ export function StandaloneFlamegraph({
     }
   }, [profile, viewportRect, logicalSpaceSize, selectedNode, hoveredNode])
 
-  // Track previous view mode to detect transitions
+  // Track previous view mode and theme to detect transitions
   const prevViewModeRef = useRef<ViewMode>(viewMode)
+  const prevThemeRef = useRef<'light' | 'dark'>(theme)
   const needsCanvasResetRef = useRef(false)
 
-  // Reset canvas state when switching to/from sandwich view
+  // Reset canvas state when switching to/from sandwich view OR when theme changes
   // This must be called before any early returns to follow Rules of Hooks
   useEffect(() => {
     const prevViewMode = prevViewModeRef.current
+    const prevTheme = prevThemeRef.current
 
-    // Mark that we need to reset canvas when entering OR leaving sandwich view
-    if (viewMode === 'sandwich' || prevViewMode === 'sandwich') {
+    // Mark that we need to reset canvas when entering OR leaving sandwich view OR theme changes
+    if (viewMode === 'sandwich' || prevViewMode === 'sandwich' || theme !== prevTheme) {
       needsCanvasResetRef.current = true
       // Clear canvas context to force re-initialization
       canvasContextRef.current = null
       // Set canvasReady to false to unmount StandaloneFlamechartView
       setCanvasReady(false)
       // Change canvas key to force new canvas element
-      // When leaving sandwich, increment counter to ensure a unique key
-      if (prevViewMode === 'sandwich') {
+      // When leaving sandwich or changing theme, increment counter to ensure a unique key
+      if (prevViewMode === 'sandwich' || theme !== prevTheme) {
         canvasResetCounterRef.current += 1
       }
       const newKey =
@@ -428,9 +432,10 @@ export function StandaloneFlamegraph({
       setCanvasKey(newKey)
     }
 
-    // Update prev view mode for next render
+    // Update prev view mode and theme for next render
     prevViewModeRef.current = viewMode
-  }, [viewMode])
+    prevThemeRef.current = theme
+  }, [viewMode, theme])
 
   // Set canvas size and ready flag - run after profile is loaded
   useLayoutEffect(() => {
@@ -446,8 +451,8 @@ export function StandaloneFlamegraph({
       // Create canvas context if missing or if we're marked for reset
       if (!canvasContextRef.current || needsCanvasResetRef.current) {
         needsCanvasResetRef.current = false
-        // Create canvas context and initialize WebGL
-        const ctx = getCanvasContext({theme: theme$, canvas})
+        // Create canvas context and initialize WebGL with the forced theme
+        const ctx = getCanvasContext({theme: forcedTheme, canvas})
 
         // Wrap renderBehind to convert viewport coordinates to canvas coordinates
         const originalRenderBehind = ctx.renderBehind.bind(ctx)
@@ -496,7 +501,7 @@ export function StandaloneFlamegraph({
 
       setCanvasReady(true)
     }
-  }, [profile, activeProfileState, theme$, logicalSpaceSize, viewMode, canvasKey])
+  }, [profile, activeProfileState, forcedTheme, logicalSpaceSize, viewMode, canvasKey])
 
   if (error) {
     return (
@@ -513,9 +518,6 @@ export function StandaloneFlamegraph({
       </div>
     )
   }
-
-  // Force the theme based on the prop instead of using system preferences
-  const forcedTheme = theme === 'light' ? lightTheme : darkTheme
 
   // Use StandaloneSandwich component for sandwich view
   if (viewMode === 'sandwich') {

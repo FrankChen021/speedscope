@@ -190,8 +190,8 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
 
     const LABEL_PADDING_PX = 5 * window.devicePixelRatio
 
-    const labelBatch = new BatchCanvasTextRenderer(ctx, this.props.theme.fgPrimaryColor)
-    const fadedLabelBatch = new BatchCanvasTextRenderer(ctx, this.props.theme.fgSecondaryColor)
+    const labelBatch = new BatchCanvasTextRenderer()
+    const fadedLabelBatch = new BatchCanvasTextRenderer()
     const matchedTextHighlightBatch = new BatchCanvasRectRenderer()
     const directlySelectedOutlineBatch = new BatchCanvasRectRenderer()
     const indirectlySelectedOutlineBatch = new BatchCanvasRectRenderer()

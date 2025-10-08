@@ -6,6 +6,7 @@
     "strict": true,
     "jsx": "react-jsx",
     "noUnusedLocals": true,
-    "target": "es2015"
+    "target": "es2015",
+    "types": ["react/jsx-runtime"]
   }
 }

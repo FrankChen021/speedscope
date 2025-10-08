@@ -19,7 +19,7 @@ interface ScrollableListViewProps {
   renderItems: (
     firstVisibleIndex: number,
     lastVisibleIndex: number,
-  ) => JSX.Element | JSX.Element[] | null
+  ) => React.JSX.Element | React.JSX.Element[] | null
   className?: string
   initialIndexInView?: number | null
 }

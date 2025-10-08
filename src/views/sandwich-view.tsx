@@ -46,7 +46,7 @@ class SandwichView extends StatelessComponent<SandwichViewProps> {
     const style = getStyle(this.props.theme)
 
     const {selectedFrame} = this.props
-    let flamegraphViews: JSX.Element | null = null
+    let flamegraphViews: React.JSX.Element | null = null
 
     if (selectedFrame) {
       flamegraphViews = (
