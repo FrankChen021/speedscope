@@ -67,6 +67,7 @@ function SortIcon(props: SortIconProps) {
 }
 
 interface ProfileTableRowViewProps {
+  key?: number
   frame: Frame
   matchedRanges: [number, number][] | null
   index: number
@@ -219,6 +220,7 @@ export const ProfileTableView = memo(
           const match = sandwichContext.getSearchMatchForFrame(frame)
           rows.push(
             ProfileTableRowView({
+              key: i,
               frame,
               matchedRanges: match == null ? null : match,
               index: i,
@@ -234,7 +236,7 @@ export const ProfileTableView = memo(
         if (rows.length === 0) {
           if (searchIsActive) {
             rows.push(
-              <tr>
+              <tr key="empty-search">
                 <td className={css(style.emptyState)}>
                   No symbol names match query "{searchQuery}".
                 </td>
@@ -242,7 +244,7 @@ export const ProfileTableView = memo(
             )
           } else {
             rows.push(
-              <tr>
+              <tr key="empty">
                 <td className={css(style.emptyState)}>No symbols found.</td>
               </tr>,
             )
