@@ -21,7 +21,8 @@ export {lightTheme} from './views/themes/light-theme'
 export {darkTheme} from './views/themes/dark-theme'
 
 // Export profile types and utilities
-export type {Profile, ProfileGroup, Frame, CallTreeNode} from './lib/profile'
+export type {Profile, ProfileGroup, Frame, CallTreeNode, FrameInfo} from './lib/profile'
+export {StackListProfileBuilder} from './lib/profile'
 export {
   importProfileGroupFromText,
   importProfilesFromArrayBuffer,

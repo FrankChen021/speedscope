@@ -193,6 +193,24 @@ export interface CallTreeNode {
   children: CallTreeNode[];
 }
 
+// Frame info for profile building
+export interface FrameInfo {
+  key: string | number;
+  name: string;
+  file?: string;
+  line?: number;
+  col?: number;
+}
+
+// Profile builders
+export declare class StackListProfileBuilder {
+  constructor(totalWeight?: number);
+  appendSampleWithWeight(stack: FrameInfo[], weight: number): void;
+  appendSample(stack: FrameInfo[]): void;
+  build(): Profile;
+  setValueFormatter(formatter: (v: number) => string): void;
+}
+
 // Import utilities
 export declare function importProfileGroupFromText(fileName: string, contents: string): Promise<ProfileGroup | null>;
 export declare function importProfilesFromArrayBuffer(fileName: string, buffer: ArrayBuffer): Promise<ProfileGroup | null>;
