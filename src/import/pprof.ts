@@ -38,11 +38,11 @@ export function importAsPprofProfile(rawProfile: ArrayBuffer): Profile | null {
     return null
   }
 
-  function i32(n: number | Long): number {
-    return typeof n === 'number' ? n : (n as Long).low
+  function i32(n: number | Long | any): number {
+    return typeof n === 'number' ? n : (n as any).low
   }
 
-  function stringVal(key: number | Long): string | null {
+  function stringVal(key: number | Long | any): string | null {
     return protoProfile.stringTable[i32(key)] || null
   }
 
@@ -102,7 +102,8 @@ export function importAsPprofProfile(rawProfile: ArrayBuffer): Profile | null {
 
     if (lastLine.functionId) {
       let funcFrame = frameInfoByFunctionID.get(i32(lastLine.functionId))
-      const line = lastLine.line instanceof Long ? lastLine.line.toNumber() : lastLine.line
+      const lineValue = lastLine.line
+      const line = typeof lineValue === 'number' ? lineValue : (lineValue as any)?.toNumber ? (lineValue as any).toNumber() : (lineValue as any)?.low
       if (line && line > 0 && funcFrame != null) {
         funcFrame.line = line
       }
