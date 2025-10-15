@@ -63,7 +63,7 @@ let AtomDev: {[key: string]: Atom<any>} | null = null
 let hotReloadStash: Map<string, any> | null = null
 
 declare const module: any
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
   ;(window as any)['Atom'] = AtomDev = {}
 
   /*
