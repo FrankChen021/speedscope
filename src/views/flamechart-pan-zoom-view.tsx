@@ -766,6 +766,17 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
   }
 
   onWindowKeyPress = (ev: KeyboardEvent) => {
+    // Don't intercept keyboard shortcuts when user is typing in input fields
+    const activeElement = document.activeElement
+    if (
+      activeElement &&
+      (activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        (activeElement as HTMLElement).isContentEditable)
+    ) {
+      return
+    }
+
     if (!this.container) return
     const {width, height} = this.container.getBoundingClientRect()
 
